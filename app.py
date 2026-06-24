@@ -280,6 +280,13 @@ if st.session_state.active_batch_id and sum_wts == 100:
             st.rerun()
 
 
+# ------------------ LOAD AND ROUTE PAGE DATA ------------------
+if st.session_state.active_batch_id:
+    batch_records = load_companies_for_batch(st.session_state.active_batch_id)
+    df_active = pd.DataFrame(batch_records)
+else:
+    df_active = pd.DataFrame()
+
 # ------------------ MAIN CONTAINER ROUTING & ONBOARDING WIZARD ------------------
 if st.session_state.onboarding_step != "idle":
     st.markdown('<h1 style="color:#FFFFFF;">Data Onboarding Wizard</h1>', unsafe_allow_html=True)
