@@ -1,12 +1,13 @@
 """
 SQLite Database Layer for Enterprise GTM Account Intelligence Platform.
-Saves, loads, and deletes company analysis runs (batches).
+Saves, loads, renames, clones, and deletes company analysis runs (batches).
 """
 
 import os
 import sqlite3
 import json
 from datetime import datetime
+from collections import Counter
 from typing import List, Dict, Any, Tuple
 
 DEFAULT_DB_FILE = os.path.join(os.path.dirname(__file__), "gtm_intelligence.db")
@@ -16,9 +17,7 @@ def get_db_connection(db_path: str = None) -> sqlite3.Connection:
     if db_path is None:
         db_path = DEFAULT_DB_FILE
         
-    # Ensure directory exists
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
@@ -29,7 +28,7 @@ def init_db(db_path: str = None) -> None:
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     
-    # Create companies table with complete GTM metrics
+    # 1. Companies Table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS companies (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,7 +60,22 @@ def init_db(db_path: str = None) -> None:
         )
     """)
     
-    # Index for fast batch lookup
+    # 2. Batches Metadata Table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS batches (
+            batch_id TEXT PRIMARY KEY,
+            source_filename TEXT,
+            record_count INTEGER,
+            average_icp REAL,
+            average_opp_score REAL,
+            top_industry TEXT,
+            top_region TEXT,
+            top_tier TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Indexes
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_batch_id ON companies(batch_id)")
     
     conn.commit()
@@ -71,20 +85,41 @@ def init_db(db_path: str = None) -> None:
 def save_company_batch(
     companies_list: List[Dict[str, Any]],
     batch_id: str,
+    source_filename: str = "Unknown Source",
     db_path: str = None
 ) -> None:
     """
-    Saves a batch of analyzed companies to the database.
-    
-    Args:
-        companies_list: List of dictionaries containing all raw values and calculated scores.
-        batch_id: Unique string identifying the upload batch.
-        db_path: Optional path to SQLite file.
+    Saves a batch of analyzed companies and automatically creates a metadata record in `batches`.
     """
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     
-    # Insert batch data
+    # Calculate GTM statistics for the batches table
+    record_count = len(companies_list)
+    if record_count > 0:
+        avg_icp = sum(float(c.get("icp_score", 0)) for c in companies_list) / record_count
+        avg_opp = sum(float(c.get("gtm_opportunity_score", 0)) for c in companies_list) / record_count
+        
+        # Calculate modes
+        industries = [c.get("Industry") for c in companies_list if c.get("Industry")]
+        locations = [c.get("Location") for c in companies_list if c.get("Location")]
+        tiers = [c.get("abm_tier") for c in companies_list if c.get("abm_tier")]
+        
+        top_ind = Counter(industries).most_common(1)[0][0] if industries else "Unknown"
+        top_loc = Counter(locations).most_common(1)[0][0] if locations else "Unknown"
+        top_tier = Counter(tiers).most_common(1)[0][0] if tiers else "Unknown"
+    else:
+        avg_icp, avg_opp = 0.0, 0.0
+        top_ind, top_loc, top_tier = "None", "None", "None"
+        
+    # Save batch metadata
+    cursor.execute("""
+        INSERT OR REPLACE INTO batches (
+            batch_id, source_filename, record_count, average_icp, average_opp_score, top_industry, top_region, top_tier
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (batch_id, source_filename, record_count, avg_icp, avg_opp, top_ind, top_loc, top_tier))
+    
+    # Insert company data
     query = """
         INSERT INTO companies (
             batch_id, company_name, industry, funding_stage, employee_count, location,
@@ -93,16 +128,12 @@ def save_company_batch(
             gtm_opportunity_score, gtm_opportunity_level, priority_level,
             outreach_reasoning, primary_contact, secondary_contact, contact_reasoning,
             account_summary, playbook, firmographic_segment
-        ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-        )
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
     
     records = []
     for c in companies_list:
-        # Serialize playbook list to JSON string for SQLite storage
         playbook_json = json.dumps(c.get("playbook", []))
-        
         records.append((
             batch_id,
             c.get("Company Name"),
@@ -136,7 +167,7 @@ def save_company_batch(
 
 
 def load_companies_for_batch(batch_id: str, db_path: str = None) -> List[Dict[str, Any]]:
-    """Loads all company records for a given batch_id, converting Rows back to dicts."""
+    """Loads all company records for a given batch_id."""
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     
@@ -152,14 +183,11 @@ def load_companies_for_batch(batch_id: str, db_path: str = None) -> List[Dict[st
     result = []
     for r in rows:
         d = dict(r)
-        
-        # De-serialize playbook back to Python list
         try:
             d["playbook"] = json.loads(d["playbook"])
         except (TypeError, json.JSONDecodeError):
             d["playbook"] = []
             
-        # Re-map DB column names to what the frontend / core expect
         d["Company Name"] = d["company_name"]
         d["Employee Count"] = d["employee_count"]
         d["Funding Stage"] = d["funding_stage"]
@@ -175,30 +203,80 @@ def load_companies_for_batch(batch_id: str, db_path: str = None) -> List[Dict[st
 
 
 def list_batches(db_path: str = None) -> List[Dict[str, Any]]:
-    """Retrieves list of distinct batches, with upload timestamp and record counts."""
+    """Retrieves list of distinct batches from the metadata table."""
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     
     cursor.execute("""
-        SELECT 
-            batch_id, 
-            MIN(created_at) as created_at, 
-            COUNT(id) as record_count 
-        FROM companies 
-        GROUP BY batch_id 
+        SELECT * FROM batches 
         ORDER BY created_at DESC
     """)
     
     rows = cursor.fetchall()
     conn.close()
     
+    # If batches table is empty, do a fallback scan from companies table to populate it retroactively
+    if not rows:
+        conn = get_db_connection(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT batch_id FROM companies")
+        legacy_batch_ids = [r["batch_id"] for r in cursor.fetchall()]
+        conn.close()
+        
+        for lid in legacy_batch_ids:
+            companies = load_companies_for_batch(lid, db_path=db_path)
+            save_company_batch(companies, lid, source_filename="Legacy Ingestion", db_path=db_path)
+            
+        # Re-query
+        conn = get_db_connection(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM batches ORDER BY created_at DESC")
+        rows = cursor.fetchall()
+        conn.close()
+        
     return [dict(r) for r in rows]
 
 
 def delete_batch(batch_id: str, db_path: str = None) -> None:
-    """Deletes all company records associated with a batch_id."""
+    """Deletes all company records and batch metadata associated with a batch_id."""
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM companies WHERE batch_id = ?", (batch_id,))
+    cursor.execute("DELETE FROM batches WHERE batch_id = ?", (batch_id,))
     conn.commit()
     conn.close()
+
+
+def rename_batch(old_id: str, new_name: str, db_path: str = None) -> str:
+    """
+    Renames a batch, generating a new suffix batch ID and updating both tables.
+    """
+    new_id = f"{new_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    
+    # Update batches table
+    cursor.execute("UPDATE batches SET batch_id = ?, source_filename = ? WHERE batch_id = ?", (new_id, new_name, old_id))
+    # Update companies table
+    cursor.execute("UPDATE companies SET batch_id = ? WHERE batch_id = ?", (new_id, old_id))
+    
+    conn.commit()
+    conn.close()
+    return new_id
+
+
+def clone_batch(batch_id: str, clone_name: str, db_path: str = None) -> str:
+    """
+    Clones a batch by making copies of all records under a new batch ID.
+    """
+    companies = load_companies_for_batch(batch_id, db_path=db_path)
+    new_id = f"{clone_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    
+    save_company_batch(
+        companies_list=companies,
+        batch_id=new_id,
+        source_filename=clone_name,
+        db_path=db_path
+    )
+    return new_id
