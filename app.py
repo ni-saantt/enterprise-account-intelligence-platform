@@ -302,22 +302,23 @@ if st.session_state.onboarding_step != "idle":
         raw_cols = st.session_state.uploaded_df_raw.columns.tolist()
         mapping = st.session_state.column_mapping.copy()
         
-        col_left_map, col_right_map = st.columns(2)
-        
-        with col_left_map:
-            st.markdown('<div style="font-weight:700; font-size:0.85rem; color:#9CA3AF; margin-bottom:10px;">Raw CSV Header</div>', unsafe_allow_html=True)
-            for idx, raw in enumerate(raw_cols):
-                # Calculate default selection
-                default_canon = mapping.get(raw)
-                st.text(f"• {raw}")
-                
-        with col_right_map:
-            st.markdown('<div style="font-weight:700; font-size:0.85rem; color:#9CA3AF; margin-bottom:10px;">Maps to Standard Header</div>', unsafe_allow_html=True)
-            for idx, raw in enumerate(raw_cols):
-                default_canon = mapping.get(raw)
-                options = ["None"] + CANONICAL_COLUMNS
-                sel_idx = options.index(default_canon) if default_canon in options else 0
-                
+        # Symmetrical row-by-row mapping layout
+        h_col1, h_col2 = st.columns([1, 1])
+        with h_col1:
+            st.markdown('<div style="font-weight:700; font-size:0.85rem; color:#9CA3AF; margin-bottom:15px; text-transform:uppercase; letter-spacing:0.05em;">Raw CSV Header</div>', unsafe_allow_html=True)
+        with h_col2:
+            st.markdown('<div style="font-weight:700; font-size:0.85rem; color:#9CA3AF; margin-bottom:15px; text-transform:uppercase; letter-spacing:0.05em;">Maps to Standard Header</div>', unsafe_allow_html=True)
+            
+        for idx, raw in enumerate(raw_cols):
+            r_col1, r_col2 = st.columns([1, 1])
+            default_canon = mapping.get(raw)
+            options = ["None"] + CANONICAL_COLUMNS
+            sel_idx = options.index(default_canon) if default_canon in options else 0
+            
+            with r_col1:
+                # Vertical center matching selectbox height offset
+                st.markdown(f'<div style="padding-top: 10px; font-weight: 600; color: #FFFFFF; font-size: 0.95rem;">• {raw}</div>', unsafe_allow_html=True)
+            with r_col2:
                 selected = st.selectbox(
                     label=f"Map {raw}",
                     options=options,
@@ -325,7 +326,6 @@ if st.session_state.onboarding_step != "idle":
                     key=f"map_sel_{raw}",
                     label_visibility="collapsed"
                 )
-                
                 # Save override
                 st.session_state.column_mapping[raw] = selected if selected != "None" else None
                 
