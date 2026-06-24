@@ -410,14 +410,34 @@ SAAS_THEME_CSS = """
     .badge-mod-opp { background-color: rgba(245, 158, 11, 0.1) !important; color: #F59E0B !important; border-color: rgba(245, 158, 11, 0.2) !important; }
     .badge-low-opp { background-color: rgba(100, 116, 139, 0.1) !important; color: #9CA3AF !important; border-color: rgba(100, 116, 139, 0.2) !important; }
 
-    /* Custom Cards */
-    .saas-card {
+    /* Custom Cards and native container overrides */
+    .saas-card, div[data-testid="stVerticalBlockBorderWrapper"] {
         background-color: #1A2235 !important;
         border: 1px solid #253047 !important;
         border-radius: 12px !important;
         padding: 24px !important;
         margin-bottom: 20px !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    /* Specific Container Key Modifiers */
+    div[data-testid="stVerticalBlockBorderWrapper"].st-key-tab-container {
+        border-top: none !important;
+        border-top-left-radius: 0 !important;
+        border-top-right-radius: 0 !important;
+    }
+    
+    div[data-testid="stVerticalBlockBorderWrapper"].st-key-height380 {
+        height: 380px !important;
+    }
+    
+    div[data-testid="stVerticalBlockBorderWrapper"].st-key-minheight360 {
+        min-height: 360px !important;
+    }
+    
+    div[data-testid="stVerticalBlockBorderWrapper"].st-key-progress-card {
+        text-align: center !important;
+        padding: 40px 20px !important;
     }
     
     .saas-card-title {

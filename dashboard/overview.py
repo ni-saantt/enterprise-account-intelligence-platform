@@ -202,126 +202,121 @@ def render_overview(df: pd.DataFrame) -> None:
     
     with chart_col1:
         # Chart 1: ICP Score Distribution (Histogram)
-        st.markdown('<div class="saas-card">', unsafe_allow_html=True)
-        st.markdown(f'<div class="saas-card-title"><span style="color:#3B82F6;">{SVG_ICONS["bar-chart"]}</span><span>ICP Score Distribution</span></div>', unsafe_allow_html=True)
-        fig_icp = px.histogram(
-            df, 
-            x="icp_score", 
-            nbins=12, 
-            color_discrete_sequence=["#3B82F6"],
-            labels={"icp_score": "ICP Score", "count": "Count"}
-        )
-        fig_icp.update_layout(
-            **PLOTLY_LAYOUT_DEFAULTS,
-            height=280,
-            xaxis_title="ICP Score",
-            yaxis_title="Count",
-            bargap=0.08
-        )
-        st.plotly_chart(fig_icp, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown(f'<div class="saas-card-title"><span style="color:#3B82F6;">{SVG_ICONS["bar-chart"]}</span><span>ICP Score Distribution</span></div>', unsafe_allow_html=True)
+            fig_icp = px.histogram(
+                df, 
+                x="icp_score", 
+                nbins=12, 
+                color_discrete_sequence=["#3B82F6"],
+                labels={"icp_score": "ICP Score", "count": "Count"}
+            )
+            fig_icp.update_layout(
+                **PLOTLY_LAYOUT_DEFAULTS,
+                height=280,
+                xaxis_title="ICP Score",
+                yaxis_title="Count",
+                bargap=0.08
+            )
+            st.plotly_chart(fig_icp, use_container_width=True)
         
         # Chart 2: ABM Tier Distribution (Pie)
-        st.markdown('<div class="saas-card">', unsafe_allow_html=True)
-        st.markdown(f'<div class="saas-card-title"><span style="color:#F59E0B;">{SVG_ICONS["target"]}</span><span>ABM Tier Ratio</span></div>', unsafe_allow_html=True)
-        tier_counts = df["abm_tier"].value_counts().reset_index()
-        tier_counts.columns = ["ABM Tier", "Count"]
-        tier_colors = {"Tier 1": "#22C55E", "Tier 2": "#F59E0B", "Tier 3": "#64748B"}
-        fig_tier = px.pie(
-            tier_counts, 
-            values="Count", 
-            names="ABM Tier",
-            color="ABM Tier",
-            color_discrete_map=tier_colors,
-            hole=0.45
-        )
-        fig_tier.update_layout(
-            **PLOTLY_LAYOUT_DEFAULTS,
-            height=280,
-            legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5)
-        )
-        fig_tier.update_traces(textposition='inside', textinfo='percent+label')
-        st.plotly_chart(fig_tier, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown(f'<div class="saas-card-title"><span style="color:#F59E0B;">{SVG_ICONS["target"]}</span><span>ABM Tier Ratio</span></div>', unsafe_allow_html=True)
+            tier_counts = df["abm_tier"].value_counts().reset_index()
+            tier_counts.columns = ["ABM Tier", "Count"]
+            tier_colors = {"Tier 1": "#22C55E", "Tier 2": "#F59E0B", "Tier 3": "#64748B"}
+            fig_tier = px.pie(
+                tier_counts, 
+                values="Count", 
+                names="ABM Tier",
+                color="ABM Tier",
+                color_discrete_map=tier_colors,
+                hole=0.45
+            )
+            fig_tier.update_layout(
+                **PLOTLY_LAYOUT_DEFAULTS,
+                height=280,
+                legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5)
+            )
+            fig_tier.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(fig_tier, use_container_width=True)
 
     with chart_col2:
         # Chart 3: Industry Breakdown (Donut)
-        st.markdown('<div class="saas-card">', unsafe_allow_html=True)
-        st.markdown(f'<div class="saas-card-title"><span style="color:#14B8A6;">{SVG_ICONS["briefcase"]}</span><span>Industry Segment Breakdown</span></div>', unsafe_allow_html=True)
-        ind_counts = df["Industry"].value_counts().reset_index()
-        ind_counts.columns = ["Industry", "Count"]
-        fig_ind = px.pie(
-            ind_counts,
-            values="Count",
-            names="Industry",
-            color_discrete_sequence=chart_color_sequence,
-            hole=0.45
-        )
-        fig_ind.update_layout(
-            **PLOTLY_LAYOUT_DEFAULTS,
-            height=280,
-            legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5)
-        )
-        fig_ind.update_traces(textposition='inside', textinfo='percent+label')
-        st.plotly_chart(fig_ind, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown(f'<div class="saas-card-title"><span style="color:#14B8A6;">{SVG_ICONS["briefcase"]}</span><span>Industry Segment Breakdown</span></div>', unsafe_allow_html=True)
+            ind_counts = df["Industry"].value_counts().reset_index()
+            ind_counts.columns = ["Industry", "Count"]
+            fig_ind = px.pie(
+                ind_counts,
+                values="Count",
+                names="Industry",
+                color_discrete_sequence=chart_color_sequence,
+                hole=0.45
+            )
+            fig_ind.update_layout(
+                **PLOTLY_LAYOUT_DEFAULTS,
+                height=280,
+                legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5)
+            )
+            fig_ind.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(fig_ind, use_container_width=True)
         
         # Chart 4: Buying Signal Levels
-        st.markdown('<div class="saas-card">', unsafe_allow_html=True)
-        st.markdown(f'<div class="saas-card-title"><span style="color:#EF4444;">{SVG_ICONS["activity"]}</span><span>Buying Signal Levels</span></div>', unsafe_allow_html=True)
-        signal_counts = df["buying_signal_level"].value_counts().reset_index()
-        signal_counts.columns = ["Buying Signal", "Count"]
-        signal_order = ["High", "Medium", "Low"]
-        signal_counts["Buying Signal"] = pd.Categorical(signal_counts["Buying Signal"], categories=signal_order, ordered=True)
-        signal_counts = signal_counts.sort_values("Buying Signal")
-        
-        signal_colors = {"High": "#EF4444", "Medium": "#F59E0B", "Low": "#64748B"}
-        fig_signal = px.bar(
-            signal_counts,
-            x="Buying Signal",
-            y="Count",
-            color="Buying Signal",
-            color_discrete_map=signal_colors,
-            labels={"Count": "Account Count"}
-        )
-        fig_signal.update_layout(
-            **PLOTLY_LAYOUT_DEFAULTS,
-            height=280,
-            xaxis_title="Intent Level",
-            yaxis_title="Count"
-        )
-        st.plotly_chart(fig_signal, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown(f'<div class="saas-card-title"><span style="color:#EF4444;">{SVG_ICONS["activity"]}</span><span>Buying Signal Levels</span></div>', unsafe_allow_html=True)
+            signal_counts = df["buying_signal_level"].value_counts().reset_index()
+            signal_counts.columns = ["Buying Signal", "Count"]
+            signal_order = ["High", "Medium", "Low"]
+            signal_counts["Buying Signal"] = pd.Categorical(signal_counts["Buying Signal"], categories=signal_order, ordered=True)
+            signal_counts = signal_counts.sort_values("Buying Signal")
+            
+            signal_colors = {"High": "#EF4444", "Medium": "#F59E0B", "Low": "#64748B"}
+            fig_signal = px.bar(
+                signal_counts,
+                x="Buying Signal",
+                y="Count",
+                color="Buying Signal",
+                color_discrete_map=signal_colors,
+                labels={"Count": "Account Count"}
+            )
+            fig_signal.update_layout(
+                **PLOTLY_LAYOUT_DEFAULTS,
+                height=280,
+                xaxis_title="Intent Level",
+                yaxis_title="Count"
+            )
+            st.plotly_chart(fig_signal, use_container_width=True)
         
     st.markdown("---")
     
     # Chart 5: Leaderboard - Top 10 Accounts (Horizontal Bar Chart)
     st.markdown('<h3 style="color:#FFFFFF; margin-bottom:12px;">Top 10 Accounts Leaderboard</h3>', unsafe_allow_html=True)
-    st.markdown('<div class="saas-card">', unsafe_allow_html=True)
-    leaderboard_df = df.sort_values(by="gtm_opportunity_score", ascending=True).tail(10)
-    
-    fig_lead = go.Figure()
-    fig_lead.add_trace(go.Bar(
-        y=leaderboard_df["Company Name"],
-        x=leaderboard_df["icp_score"],
-        name="ICP Fit Score",
-        orientation="h",
-        marker=dict(color="#3B82F6")
-    ))
-    fig_lead.add_trace(go.Bar(
-        y=leaderboard_df["Company Name"],
-        x=leaderboard_df["gtm_opportunity_score"],
-        name="GTM Opportunity Score",
-        orientation="h",
-        marker=dict(color="#10B981")
-    ))
-    
-    fig_lead.update_layout(
-        **PLOTLY_LAYOUT_DEFAULTS,
-        barmode="group",
-        height=420,
-        xaxis_title="Score Index",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-    )
-    st.plotly_chart(fig_lead, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    with st.container(border=True):
+        leaderboard_df = df.sort_values(by="gtm_opportunity_score", ascending=True).tail(10)
+        
+        fig_lead = go.Figure()
+        fig_lead.add_trace(go.Bar(
+            y=leaderboard_df["Company Name"],
+            x=leaderboard_df["icp_score"],
+            name="ICP Fit Score",
+            orientation="h",
+            marker=dict(color="#3B82F6")
+        ))
+        fig_lead.add_trace(go.Bar(
+            y=leaderboard_df["Company Name"],
+            x=leaderboard_df["gtm_opportunity_score"],
+            name="GTM Opportunity Score",
+            orientation="h",
+            marker=dict(color="#10B981")
+        ))
+        
+        fig_lead.update_layout(
+            **PLOTLY_LAYOUT_DEFAULTS,
+            barmode="group",
+            height=420,
+            xaxis_title="Score Index",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        st.plotly_chart(fig_lead, use_container_width=True)

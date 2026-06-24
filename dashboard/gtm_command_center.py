@@ -163,57 +163,55 @@ def render_command_center(df: pd.DataFrame) -> None:
         
     with row2_col2:
         # Tier Distribution Donut
-        st.markdown('<div class="saas-card" style="height: 380px;">', unsafe_allow_html=True)
-        st.markdown(f'<div class="saas-card-title"><span style="color:#F59E0B;">{SVG_ICONS["target"]}</span><span>ABM Tier Distribution</span></div>', unsafe_allow_html=True)
-        
-        tier_counts = df["abm_tier"].value_counts().reset_index()
-        tier_counts.columns = ["ABM Tier", "Count"]
-        tier_colors = {"Tier 1": "#22C55E", "Tier 2": "#F59E0B", "Tier 3": "#64748B"}
-        
-        fig_tier = px.pie(
-            tier_counts, 
-            values="Count", 
-            names="ABM Tier",
-            color="ABM Tier",
-            color_discrete_map=tier_colors,
-            hole=0.55
-        )
-        fig_tier.update_layout(
-            **PLOTLY_LAYOUT_DEFAULTS,
-            height=260,
-            showlegend=True,
-            legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5)
-        )
-        fig_tier.update_traces(textposition='inside', textinfo='percent')
-        st.plotly_chart(fig_tier, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
+        with st.container(border=True, key="height380"):
+            st.markdown(f'<div class="saas-card-title"><span style="color:#F59E0B;">{SVG_ICONS["target"]}</span><span>ABM Tier Distribution</span></div>', unsafe_allow_html=True)
+            
+            tier_counts = df["abm_tier"].value_counts().reset_index()
+            tier_counts.columns = ["ABM Tier", "Count"]
+            tier_colors = {"Tier 1": "#22C55E", "Tier 2": "#F59E0B", "Tier 3": "#64748B"}
+            
+            fig_tier = px.pie(
+                tier_counts, 
+                values="Count", 
+                names="ABM Tier",
+                color="ABM Tier",
+                color_discrete_map=tier_colors,
+                hole=0.55
+            )
+            fig_tier.update_layout(
+                **PLOTLY_LAYOUT_DEFAULTS,
+                height=260,
+                showlegend=True,
+                legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5)
+            )
+            fig_tier.update_traces(textposition='inside', textinfo='percent')
+            st.plotly_chart(fig_tier, use_container_width=True)
+            
     with row2_col3:
         # Buying Signal Distribution
-        st.markdown('<div class="saas-card" style="height: 380px;">', unsafe_allow_html=True)
-        st.markdown(f'<div class="saas-card-title"><span style="color:#EF4444;">{SVG_ICONS["activity"]}</span><span>Intent Signals</span></div>', unsafe_allow_html=True)
-        
-        signal_counts = df["buying_signal_level"].value_counts().reset_index()
-        signal_counts.columns = ["Buying Signal", "Count"]
-        signal_colors = {"High": "#EF4444", "Medium": "#F59E0B", "Low": "#64748B"}
-        
-        fig_signal = px.pie(
-            signal_counts,
-            values="Count",
-            names="Buying Signal",
-            color="Buying Signal",
-            color_discrete_map=signal_colors,
-            hole=0.55
-        )
-        fig_signal.update_layout(
-            **PLOTLY_LAYOUT_DEFAULTS,
-            height=260,
-            showlegend=True,
-            legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5)
-        )
-        fig_signal.update_traces(textposition='inside', textinfo='percent')
-        st.plotly_chart(fig_signal, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container(border=True, key="height380"):
+            st.markdown(f'<div class="saas-card-title"><span style="color:#EF4444;">{SVG_ICONS["activity"]}</span><span>Intent Signals</span></div>', unsafe_allow_html=True)
+            
+            signal_counts = df["buying_signal_level"].value_counts().reset_index()
+            signal_counts.columns = ["Buying Signal", "Count"]
+            signal_colors = {"High": "#EF4444", "Medium": "#F59E0B", "Low": "#64748B"}
+            
+            fig_signal = px.pie(
+                signal_counts,
+                values="Count",
+                names="Buying Signal",
+                color="Buying Signal",
+                color_discrete_map=signal_colors,
+                hole=0.55
+            )
+            fig_signal.update_layout(
+                **PLOTLY_LAYOUT_DEFAULTS,
+                height=260,
+                showlegend=True,
+                legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5)
+            )
+            fig_signal.update_traces(textposition='inside', textinfo='percent')
+            st.plotly_chart(fig_signal, use_container_width=True)
 
     # ------------------ THIRD ROW: TOP OPPORTUNITIES ------------------
     st.markdown('<h3 style="color:#FFFFFF; margin-top:20px; margin-bottom:12px;">Top Opportunities</h3>', unsafe_allow_html=True)
@@ -255,49 +253,47 @@ def render_command_center(df: pd.DataFrame) -> None:
     
     with action_col_left:
         # Accounts needing outreach list
-        st.markdown(f"""
-            <div class="saas-card" style="min-height:360px;">
+        with st.container(border=True, key="minheight360"):
+            st.markdown(f"""
                 <div class="saas-card-title">
                     <span style="color:#EF4444;">{SVG_ICONS['activity']}</span>
                     <span>Immediate Outreach Target List</span>
                 </div>
-        """, unsafe_allow_html=True)
-        
-        immediate_targets = df[
-            (df["priority_level"] == "High") & 
-            (df["buying_signal_level"].isin(["High", "Medium"]))
-        ].sort_values(by="gtm_opportunity_score", ascending=False).head(3)
-        
-        if not immediate_targets.empty:
-            for _, row in immediate_targets.iterrows():
-                opp_badge = get_opportunity_badge(row["gtm_opportunity_level"])
-                priority_badge = get_priority_badge(row["priority_level"])
-                tier_badge = get_tier_badge(row["abm_tier"])
-                st.markdown(f"""
-                    <div style="padding:16px; border:1px solid #253047; border-radius:8px; margin-bottom:12px; background-color:#111827;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <strong style="font-size:0.95rem; color:#FFFFFF;">{row['Company Name']}</strong>
-                            <div>{tier_badge} {opp_badge}</div>
-                        </div>
-                        <div style="font-size:0.8rem; color:#9CA3AF; margin-top:4px;">
-                            Sector: {row['Industry']} | Emp: {row['Employee Count']} | Primary Contact: {row['primary_contact']}
-                        </div>
-                        <div style="font-size:0.82rem; margin-top:8px; padding:8px; background-color:#1A2235; border-radius:6px; color:#D1D5DB; border-left:3px solid #3B82F6;">
-                            <b>Recommended Play:</b> Directly email the <b>{row['primary_contact']}</b> with value-proposition referencing scaling {row['Industry']}.
-                        </div>
-                    </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.info("No high priority immediate outreach targets found in this batch.")
+            """, unsafe_allow_html=True)
             
-        st.markdown("</div>", unsafe_allow_html=True)
+            immediate_targets = df[
+                (df["priority_level"] == "High") & 
+                (df["buying_signal_level"].isin(["High", "Medium"]))
+            ].sort_values(by="gtm_opportunity_score", ascending=False).head(3)
+            
+            if not immediate_targets.empty:
+                for _, row in immediate_targets.iterrows():
+                    opp_badge = get_opportunity_badge(row["gtm_opportunity_level"])
+                    priority_badge = get_priority_badge(row["priority_level"])
+                    tier_badge = get_tier_badge(row["abm_tier"])
+                    st.markdown(f"""
+                        <div style="padding:16px; border:1px solid #253047; border-radius:8px; margin-bottom:12px; background-color:#111827;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <strong style="font-size:0.95rem; color:#FFFFFF;">{row['Company Name']}</strong>
+                                <div>{tier_badge} {opp_badge}</div>
+                            </div>
+                            <div style="font-size:0.8rem; color:#9CA3AF; margin-top:4px;">
+                                Sector: {row['Industry']} | Emp: {row['Employee Count']} | Primary Contact: {row['primary_contact']}
+                            </div>
+                            <div style="font-size:0.82rem; margin-top:8px; padding:8px; background-color:#1A2235; border-radius:6px; color:#D1D5DB; border-left:3px solid #3B82F6;">
+                                <b>Recommended Play:</b> Directly email the <b>{row['primary_contact']}</b> with value-proposition referencing scaling {row['Industry']}.
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.info("No high priority immediate outreach targets found in this batch.")
 
     with action_col_right:
         # Spotlight Playbook
         spotlight = df.sort_values(by="gtm_opportunity_score", ascending=False).iloc[0] if not df.empty else None
         if spotlight is not None:
-            st.markdown(f"""
-                <div class="saas-card" style="min-height:360px;">
+            with st.container(border=True, key="minheight360"):
+                st.markdown(f"""
                     <div class="saas-card-title">
                         <span style="color:#3B82F6;">{SVG_ICONS['rocket']}</span>
                         <span>Playbook Spotlight: {spotlight['Company Name']}</span>
@@ -306,22 +302,22 @@ def render_command_center(df: pd.DataFrame) -> None:
                         Target Contact: <b>{spotlight['primary_contact']}</b> (Primary)
                     </div>
                     <div class="timeline-container">
-            """, unsafe_allow_html=True)
-            
-            playbook_steps = spotlight["playbook"]
-            day_labels = ["Day 1", "Day 3", "Day 7", "Day 14", "Day 21"]
-            
-            for idx, step in enumerate(playbook_steps[:4]):
-                clean_text = step.split(".", 1)[1].strip() if "." in step else step
-                st.markdown(f"""
-                    <div class="timeline-item">
-                        <div class="timeline-badge">{idx + 1}</div>
-                        <div class="timeline-title">{day_labels[idx]} - {clean_text.split(':')[0]}</div>
-                        <div class="timeline-desc">{clean_text.split(':')[-1] if ':' in clean_text else clean_text}</div>
-                    </div>
                 """, unsafe_allow_html=True)
                 
-            st.markdown("</div></div>", unsafe_allow_html=True)
+                playbook_steps = spotlight["playbook"]
+                day_labels = ["Day 1", "Day 3", "Day 7", "Day 14", "Day 21"]
+                
+                for idx, step in enumerate(playbook_steps[:4]):
+                    clean_text = step.split(".", 1)[1].strip() if "." in step else step
+                    st.markdown(f"""
+                        <div class="timeline-item">
+                            <div class="timeline-badge">{idx + 1}</div>
+                            <div class="timeline-title">{day_labels[idx]} - {clean_text.split(':')[0]}</div>
+                            <div class="timeline-desc">{clean_text.split(':')[-1] if ':' in clean_text else clean_text}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                st.markdown("</div>", unsafe_allow_html=True)
             
     # ------------------ FIFTH ROW: MARKET INTELLIGENCE METRIC ------------------
     st.markdown('<h3 style="color:#FFFFFF; margin-top:20px; margin-bottom:12px;">Market Intelligence Summary</h3>', unsafe_allow_html=True)
@@ -332,8 +328,6 @@ def render_command_center(df: pd.DataFrame) -> None:
         avg_opp=("gtm_opportunity_score", "mean"),
         cnt=("id", "count")
     ).reset_index().sort_values(by="avg_opp", ascending=False)
-    
-    st.markdown('<div class="saas-card">', unsafe_allow_html=True)
     
     html_rows = []
     for _, row in ind_data.iterrows():
@@ -348,19 +342,20 @@ def render_command_center(df: pd.DataFrame) -> None:
         """)
         
     st.markdown(f"""
-        <table style="width:100%; border-collapse:collapse; font-size:0.88rem; text-align:left;">
-            <thead>
-                <tr style="background-color:#111827; border-bottom:2px solid #253047; color:#9CA3AF;">
-                    <th style="padding:12px;">Industry Vertical</th>
-                    <th style="padding:12px; text-align:center;">Segment Count</th>
-                    <th style="padding:12px; text-align:center;">Average ICP Fit</th>
-                    <th style="padding:12px; text-align:center;">Average Intent Velocity</th>
-                    <th style="padding:12px; text-align:center;">Average GTM Index</th>
-                </tr>
-            </thead>
-            <tbody>
-                {"".join(html_rows)}
-            </tbody>
-        </table>
-    </div>
+        <div class="saas-card">
+            <table style="width:100%; border-collapse:collapse; font-size:0.88rem; text-align:left;">
+                <thead>
+                    <tr style="background-color:#111827; border-bottom:2px solid #253047; color:#9CA3AF;">
+                        <th style="padding:12px;">Industry Vertical</th>
+                        <th style="padding:12px; text-align:center;">Segment Count</th>
+                        <th style="padding:12px; text-align:center;">Average ICP Fit</th>
+                        <th style="padding:12px; text-align:center;">Average Intent Velocity</th>
+                        <th style="padding:12px; text-align:center;">Average GTM Index</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {"".join(html_rows)}
+                </tbody>
+            </table>
+        </div>
     """, unsafe_allow_html=True)

@@ -294,45 +294,43 @@ if st.session_state.onboarding_step != "idle":
     
     # ------------------ STEP 1: COLUMN MAPPING ------------------
     if st.session_state.onboarding_step == "mapping":
-        st.markdown('<div class="saas-card">', unsafe_allow_html=True)
-        st.markdown('<div class="saas-card-title">Column Mapping Setup</div>', unsafe_allow_html=True)
-        st.markdown('<p style="font-size:0.88rem; color:#9CA3AF;">Validate and edit column mapping parameters. Standard columns must map to raw CSV headers.</p>', unsafe_allow_html=True)
-        
-        # Draw columns matching config
-        raw_cols = st.session_state.uploaded_df_raw.columns.tolist()
-        mapping = st.session_state.column_mapping.copy()
-        
-        # Symmetrical row-by-row mapping layout
-        h_col1, h_col2 = st.columns([1, 1])
-        with h_col1:
-            st.markdown('<div style="font-weight:700; font-size:0.85rem; color:#9CA3AF; margin-bottom:15px; text-transform:uppercase; letter-spacing:0.05em;">Raw CSV Header</div>', unsafe_allow_html=True)
-        with h_col2:
-            st.markdown('<div style="font-weight:700; font-size:0.85rem; color:#9CA3AF; margin-bottom:15px; text-transform:uppercase; letter-spacing:0.05em;">Maps to Standard Header</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown('<div class="saas-card-title">Column Mapping Setup</div>', unsafe_allow_html=True)
+            st.markdown('<p style="font-size:0.88rem; color:#9CA3AF;">Validate and edit column mapping parameters. Standard columns must map to raw CSV headers.</p>', unsafe_allow_html=True)
             
-        for idx, raw in enumerate(raw_cols):
-            r_col1, r_col2 = st.columns([1, 1])
-            default_canon = mapping.get(raw)
-            options = ["None"] + CANONICAL_COLUMNS
-            sel_idx = options.index(default_canon) if default_canon in options else 0
+            # Draw columns matching config
+            raw_cols = st.session_state.uploaded_df_raw.columns.tolist()
+            mapping = st.session_state.column_mapping.copy()
             
-            with r_col1:
-                # Vertical center matching selectbox height offset
-                st.markdown(f'<div style="padding-top: 10px; font-weight: 600; color: #FFFFFF; font-size: 0.95rem;">• {raw}</div>', unsafe_allow_html=True)
-            with r_col2:
-                selected = st.selectbox(
-                    label=f"Map {raw}",
-                    options=options,
-                    index=sel_idx,
-                    key=f"map_sel_{raw}",
-                    label_visibility="collapsed"
-                )
-                # Save override
-                st.session_state.column_mapping[raw] = selected if selected != "None" else None
+            # Symmetrical row-by-row mapping layout
+            h_col1, h_col2 = st.columns([1, 1])
+            with h_col1:
+                st.markdown('<div style="font-weight:700; font-size:0.85rem; color:#9CA3AF; margin-bottom:15px; text-transform:uppercase; letter-spacing:0.05em;">Raw CSV Header</div>', unsafe_allow_html=True)
+            with h_col2:
+                st.markdown('<div style="font-weight:700; font-size:0.85rem; color:#9CA3AF; margin-bottom:15px; text-transform:uppercase; letter-spacing:0.05em;">Maps to Standard Header</div>', unsafe_allow_html=True)
                 
-        # Validate Required Columns
-        unmapped = get_unmapped_required(st.session_state.column_mapping)
-        
-        st.markdown("</div>", unsafe_allow_html=True)
+            for idx, raw in enumerate(raw_cols):
+                r_col1, r_col2 = st.columns([1, 1])
+                default_canon = mapping.get(raw)
+                options = ["None"] + CANONICAL_COLUMNS
+                sel_idx = options.index(default_canon) if default_canon in options else 0
+                
+                with r_col1:
+                    # Vertical center matching selectbox height offset
+                    st.markdown(f'<div style="padding-top: 10px; font-weight: 600; color: #FFFFFF; font-size: 0.95rem;">• {raw}</div>', unsafe_allow_html=True)
+                with r_col2:
+                    selected = st.selectbox(
+                        label=f"Map {raw}",
+                        options=options,
+                        index=sel_idx,
+                        key=f"map_sel_{raw}",
+                        label_visibility="collapsed"
+                    )
+                    # Save override
+                    st.session_state.column_mapping[raw] = selected if selected != "None" else None
+                    
+            # Validate Required Columns
+            unmapped = get_unmapped_required(st.session_state.column_mapping)
         
         if unmapped:
             st.markdown(f"""
@@ -367,56 +365,52 @@ if st.session_state.onboarding_step != "idle":
     elif st.session_state.onboarding_step == "audit":
         audit = audit_dataset_health(st.session_state.uploaded_df_raw, st.session_state.column_mapping)
         
-        st.markdown('<div class="saas-card">', unsafe_allow_html=True)
-        st.markdown('<div class="saas-card-title">Dataset Health Report</div>', unsafe_allow_html=True)
-        
-        score = audit["quality_score"]
-        score_color = "#22C55E" if score >= 80 else "#F59E0B" if score >= 60 else "#EF4444"
-        
-        col_l_aud, col_r_aud = st.columns([1, 2])
-        
-        with col_l_aud:
-            st.markdown(f"""
-                <div style="text-align:center; padding:20px; border:1px solid #253047; border-radius:10px; background-color:#111827;">
-                    <div style="font-size:0.8rem; color:#64748B; font-weight:700; text-transform:uppercase;">Data Quality Score</div>
-                    <div style="font-size:3.5rem; font-weight:800; color:{score_color}; margin:10px 0;">{score}%</div>
-                    <div style="font-size:0.85rem; color:#E5E7EB;"><b>{audit['total_records']}</b> total rows evaluated</div>
-                </div>
-            """, unsafe_allow_html=True)
-        
-        with col_r_aud:
-            st.markdown('<div style="font-weight:600; color:#FFFFFF; margin-bottom:8px;">Quality Metrics Summary:</div>', unsafe_allow_html=True)
-            st.markdown(f"""
-                <table style="width:100%; font-size:0.88rem; border-collapse:collapse; color:#9CA3AF;">
-                    <tr style="border-bottom:1px solid #253047;"><td style="padding:6px 0; font-weight:600; color:#FFFFFF;">Duplicate Companies</td><td style="padding:6px 0; color:#EF4444;">{audit['duplicate_count']} matches flagged</td></tr>
-                    <tr style="border-bottom:1px solid #253047;"><td style="padding:6px 0; font-weight:600; color:#FFFFFF;">Missing Employee Counts</td><td style="padding:6px 0;">{audit['missing_counts'].get('Employee Count', 0)} rows</td></tr>
-                    <tr style="border-bottom:1px solid #253047;"><td style="padding:6px 0; font-weight:600; color:#FFFFFF;">Missing Industries</td><td style="padding:6px 0;">{audit['missing_counts'].get('Industry', 0)} rows</td></tr>
-                    <tr style="border-bottom:1px solid #253047;"><td style="padding:6px 0; font-weight:600; color:#FFFFFF;">Missing Funding Stages</td><td style="padding:6px 0;">{audit['missing_counts'].get('Funding Stage', 0)} rows</td></tr>
-                    <tr style="border-bottom:1px solid #253047;"><td style="padding:6px 0; font-weight:600; color:#FFFFFF;">Missing Locations</td><td style="padding:6px 0;">{audit['missing_counts'].get('Location', 0)} rows</td></tr>
-                </table>
-            """, unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown('<div class="saas-card-title">Dataset Health Report</div>', unsafe_allow_html=True)
             
-        st.markdown("</div>", unsafe_allow_html=True)
+            score = audit["quality_score"]
+            score_color = "#22C55E" if score >= 80 else "#F59E0B" if score >= 60 else "#EF4444"
+            
+            col_l_aud, col_r_aud = st.columns([1, 2])
+            
+            with col_l_aud:
+                st.markdown(f"""
+                    <div style="text-align:center; padding:20px; border:1px solid #253047; border-radius:10px; background-color:#111827;">
+                        <div style="font-size:0.8rem; color:#64748B; font-weight:700; text-transform:uppercase;">Data Quality Score</div>
+                        <div style="font-size:3.5rem; font-weight:800; color:{score_color}; margin:10px 0;">{score}%</div>
+                        <div style="font-size:0.85rem; color:#E5E7EB;"><b>{audit['total_records']}</b> total rows evaluated</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            with col_r_aud:
+                st.markdown('<div style="font-weight:600; color:#FFFFFF; margin-bottom:8px;">Quality Metrics Summary:</div>', unsafe_allow_html=True)
+                st.markdown(f"""
+                    <table style="width:100%; font-size:0.88rem; border-collapse:collapse; color:#9CA3AF;">
+                        <tr style="border-bottom:1px solid #253047;"><td style="padding:6px 0; font-weight:600; color:#FFFFFF;">Duplicate Companies</td><td style="padding:6px 0; color:#EF4444;">{audit['duplicate_count']} matches flagged</td></tr>
+                        <tr style="border-bottom:1px solid #253047;"><td style="padding:6px 0; font-weight:600; color:#FFFFFF;">Missing Employee Counts</td><td style="padding:6px 0;">{audit['missing_counts'].get('Employee Count', 0)} rows</td></tr>
+                        <tr style="border-bottom:1px solid #253047;"><td style="padding:6px 0; font-weight:600; color:#FFFFFF;">Missing Industries</td><td style="padding:6px 0;">{audit['missing_counts'].get('Industry', 0)} rows</td></tr>
+                        <tr style="border-bottom:1px solid #253047;"><td style="padding:6px 0; font-weight:600; color:#FFFFFF;">Missing Funding Stages</td><td style="padding:6px 0;">{audit['missing_counts'].get('Funding Stage', 0)} rows</td></tr>
+                        <tr style="border-bottom:1px solid #253047;"><td style="padding:6px 0; font-weight:600; color:#FFFFFF;">Missing Locations</td><td style="padding:6px 0;">{audit['missing_counts'].get('Location', 0)} rows</td></tr>
+                    </table>
+                """, unsafe_allow_html=True)
         
         # Duplicate Resolution Settings
-        st.markdown('<div class="saas-card">', unsafe_allow_html=True)
-        st.markdown('<div class="saas-card-title">Duplicate Resolution Strategy</div>', unsafe_allow_html=True)
-        st.session_state.dedup_strategy = st.selectbox(
-            "Select Resolution Logic",
-            options=["Keep First", "Keep Latest", "Merge Records"],
-            help="Keep First retains the first row. Keep Latest takes the last row. Merge Records merges duplicates by taking the maximum size and non-empty parameters."
-        )
-        st.markdown("</div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown('<div class="saas-card-title">Duplicate Resolution Strategy</div>', unsafe_allow_html=True)
+            st.session_state.dedup_strategy = st.selectbox(
+                "Select Resolution Logic",
+                options=["Keep First", "Keep Latest", "Merge Records"],
+                help="Keep First retains the first row. Keep Latest takes the last row. Merge Records merges duplicates by taking the maximum size and non-empty parameters."
+            )
         
         # Health Warnings list
         if audit["warnings"]:
-            st.markdown('<div class="saas-card">', unsafe_allow_html=True)
-            st.markdown('<div class="saas-card-title">Data Quality Alerts</div>', unsafe_allow_html=True)
-            for w in audit["warnings"][:6]: # Limit warnings view
-                st.markdown(f'<div style="font-size:0.85rem; color:#F59E0B; margin-bottom:5px;">⚠ {w}</div>', unsafe_allow_html=True)
-            if len(audit["warnings"]) > 6:
-                st.text(f"...and {len(audit['warnings']) - 6} other minor missing fields.")
-            st.markdown("</div>", unsafe_allow_html=True)
+            with st.container(border=True):
+                st.markdown('<div class="saas-card-title">Data Quality Alerts</div>', unsafe_allow_html=True)
+                for w in audit["warnings"][:6]: # Limit warnings view
+                    st.markdown(f'<div style="font-size:0.85rem; color:#F59E0B; margin-bottom:5px;">⚠ {w}</div>', unsafe_allow_html=True)
+                if len(audit["warnings"]) > 6:
+                    st.text(f"...and {len(audit['warnings']) - 6} other minor missing fields.")
             
         # Ingestion triggers
         col_b1, col_b2 = st.columns([1, 10])
@@ -431,23 +425,23 @@ if st.session_state.onboarding_step != "idle":
 
     # ------------------ STEP 3: PROGRESS TRACKER ------------------
     elif st.session_state.onboarding_step == "progress":
-        st.markdown('<div class="saas-card" style="text-align:center; padding:40px 20px;">', unsafe_allow_html=True)
-        progress_text = st.empty()
-        bar = st.progress(0)
-        
-        # Steps simulation + processing
-        steps = [
-            ("Validating mapping structures...", 15),
-            ("Deduplicating fuzzy accounts...", 35),
-            ("Normalizing cell categories...", 55),
-            ("Calculating GTM scoring profiles...", 75),
-            ("Saving and indexing batch in SQLite database...", 95)
-        ]
-        
-        for idx, (label, pct) in enumerate(steps):
-            progress_text.write(f"**Step {idx+1}/5:** {label}")
-            bar.progress(pct)
-            time.sleep(0.3)  # Visually smooth transitions
+        with st.container(border=True, key="progress-card"):
+            progress_text = st.empty()
+            bar = st.progress(0)
+            
+            # Steps simulation + processing
+            steps = [
+                ("Validating mapping structures...", 15),
+                ("Deduplicating fuzzy accounts...", 35),
+                ("Normalizing cell categories...", 55),
+                ("Calculating GTM scoring profiles...", 75),
+                ("Saving and indexing batch in SQLite database...", 95)
+            ]
+            
+            for idx, (label, pct) in enumerate(steps):
+                progress_text.write(f"**Step {idx+1}/5:** {label}")
+                bar.progress(pct)
+                time.sleep(0.3)  # Visually smooth transitions
             
         # Running Ingestion 2.0 deduplication and normalizations
         df_raw = st.session_state.uploaded_df_raw

@@ -32,17 +32,16 @@ def render_revenue_market_intelligence(df: pd.DataFrame) -> None:
     }
     
     # Let users customize target ACVs dynamically in the page
-    st.markdown('<div class="saas-card">', unsafe_allow_html=True)
-    acv_col1, acv_col2, acv_col3, acv_col4 = st.columns(4)
-    with acv_col1:
-        acv_ent = st.number_input("Enterprise ACV ($)", value=50000, step=5000)
-    with acv_col2:
-        acv_mid = st.number_input("Mid-Market ACV ($)", value=20000, step=2000)
-    with acv_col3:
-        acv_smb = st.number_input("SMB ACV ($)", value=5000, step=500)
-    with acv_col4:
-        acv_stu = st.number_input("Startup ACV ($)", value=1500, step=100)
-    st.markdown('</div>', unsafe_allow_html=True)
+    with st.container(border=True):
+        acv_col1, acv_col2, acv_col3, acv_col4 = st.columns(4)
+        with acv_col1:
+            acv_ent = st.number_input("Enterprise ACV ($)", value=50000, step=5000)
+        with acv_col2:
+            acv_mid = st.number_input("Mid-Market ACV ($)", value=20000, step=2000)
+        with acv_col3:
+            acv_smb = st.number_input("SMB ACV ($)", value=5000, step=500)
+        with acv_col4:
+            acv_stu = st.number_input("Startup ACV ($)", value=1500, step=100)
             
     custom_acvs = {
         "Enterprise": acv_ent,
@@ -107,25 +106,24 @@ def render_revenue_market_intelligence(df: pd.DataFrame) -> None:
         """, unsafe_allow_html=True)
         
     # Render Revenue Potential Bar Chart
-    st.markdown('<div class="saas-card">', unsafe_allow_html=True)
-    fig_rev = px.bar(
-        seg_group,
-        x="Segment",
-        y="Pipeline Value",
-        color="Segment",
-        text="Pipeline Value",
-        color_discrete_sequence=["#3B82F6", "#14B8A6", "#8B5CF6", "#F59E0B"],
-        labels={"Pipeline Value": "Pipeline Value ($)"}
-    )
-    fig_rev.update_layout(
-        **PLOTLY_LAYOUT_DEFAULTS,
-        height=300,
-        xaxis_title="Firmographic Segment",
-        yaxis_title="Pipeline Potential ($)"
-    )
-    fig_rev.update_traces(texttemplate='$%{text:,.0f}', textposition='outside')
-    st.plotly_chart(fig_rev, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    with st.container(border=True):
+        fig_rev = px.bar(
+            seg_group,
+            x="Segment",
+            y="Pipeline Value",
+            color="Segment",
+            text="Pipeline Value",
+            color_discrete_sequence=["#3B82F6", "#14B8A6", "#8B5CF6", "#F59E0B"],
+            labels={"Pipeline Value": "Pipeline Value ($)"}
+        )
+        fig_rev.update_layout(
+            **PLOTLY_LAYOUT_DEFAULTS,
+            height=300,
+            xaxis_title="Firmographic Segment",
+            yaxis_title="Pipeline Potential ($)"
+        )
+        fig_rev.update_traces(texttemplate='$%{text:,.0f}', textposition='outside')
+        st.plotly_chart(fig_rev, use_container_width=True)
     
     st.markdown("---")
 
@@ -133,60 +131,59 @@ def render_revenue_market_intelligence(df: pd.DataFrame) -> None:
     st.markdown('<h3 style="color:#FFFFFF; margin-bottom:4px;">GTM Fit & Intent Quadrant Analysis</h3>', unsafe_allow_html=True)
     st.markdown('<p style="color:#64748B; font-size:0.88rem; margin-top:0; margin-bottom:16px;">Maps Account ICP Alignment (Fit) against Buying Signals (Intent) to isolate priority segments.</p>', unsafe_allow_html=True)
     
-    st.markdown('<div class="saas-card">', unsafe_allow_html=True)
-    fig_quad = px.scatter(
-        df,
-        x="icp_score",
-        y="buying_signal_score",
-        color="gtm_opportunity_score",
-        size="Employee Count",
-        hover_name="Company Name",
-        hover_data=["Industry", "Funding Stage", "Location", "priority_level", "abm_tier"],
-        color_continuous_scale=px.colors.sequential.Viridis,
-        labels={
-            "icp_score": "ICP Score (Fit)",
-            "buying_signal_score": "Buying Signal Score (Intent)",
-            "gtm_opportunity_score": "GTM Opportunity Score"
-        }
-    )
-    
-    # Draw quadrant dividers
-    fig_quad.add_shape(
-        type="line", x0=60, y0=0, x1=60, y1=100,
-        line=dict(color="#253047", width=1.5, dash="dash")
-    )
-    fig_quad.add_shape(
-        type="line", x0=0, y0=40, x1=100, y1=40,
-        line=dict(color="#253047", width=1.5, dash="dash")
-    )
-    
-    # Add labels in the four quadrants
-    fig_quad.add_annotation(
-        x=80, y=85, text="Sweet Spot (High Fit + High Intent)",
-        showarrow=False, font=dict(color="#22C55E", size=10, family="Plus Jakarta Sans")
-    )
-    fig_quad.add_annotation(
-        x=25, y=85, text="Intent Waves (Low Fit + High Intent)",
-        showarrow=False, font=dict(color="#3B82F6", size=10, family="Plus Jakarta Sans")
-    )
-    fig_quad.add_annotation(
-        x=80, y=15, text="Long-term Fit (High Fit + Low Intent)",
-        showarrow=False, font=dict(color="#F59E0B", size=10, family="Plus Jakarta Sans")
-    )
-    fig_quad.add_annotation(
-        x=25, y=15, text="Cold Targets (Low Fit + Low Intent)",
-        showarrow=False, font=dict(color="#64748B", size=10, family="Plus Jakarta Sans")
-    )
-    
-    fig_quad.update_layout(
-        **PLOTLY_LAYOUT_DEFAULTS,
-        xaxis=dict(range=[0, 105], title="ICP Score (Fit)"),
-        yaxis=dict(range=[0, 105], title="Buying Signal Score (Intent)"),
-        height=480
-    )
-    
-    st.plotly_chart(fig_quad, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    with st.container(border=True):
+        fig_quad = px.scatter(
+            df,
+            x="icp_score",
+            y="buying_signal_score",
+            color="gtm_opportunity_score",
+            size="Employee Count",
+            hover_name="Company Name",
+            hover_data=["Industry", "Funding Stage", "Location", "priority_level", "abm_tier"],
+            color_continuous_scale=px.colors.sequential.Viridis,
+            labels={
+                "icp_score": "ICP Score (Fit)",
+                "buying_signal_score": "Buying Signal Score (Intent)",
+                "gtm_opportunity_score": "GTM Opportunity Score"
+            }
+        )
+        
+        # Draw quadrant dividers
+        fig_quad.add_shape(
+            type="line", x0=60, y0=0, x1=60, y1=100,
+            line=dict(color="#253047", width=1.5, dash="dash")
+        )
+        fig_quad.add_shape(
+            type="line", x0=0, y0=40, x1=100, y1=40,
+            line=dict(color="#253047", width=1.5, dash="dash")
+        )
+        
+        # Add labels in the four quadrants
+        fig_quad.add_annotation(
+            x=80, y=85, text="Sweet Spot (High Fit + High Intent)",
+            showarrow=False, font=dict(color="#22C55E", size=10, family="Plus Jakarta Sans")
+        )
+        fig_quad.add_annotation(
+            x=25, y=85, text="Intent Waves (Low Fit + High Intent)",
+            showarrow=False, font=dict(color="#3B82F6", size=10, family="Plus Jakarta Sans")
+        )
+        fig_quad.add_annotation(
+            x=80, y=15, text="Long-term Fit (High Fit + Low Intent)",
+            showarrow=False, font=dict(color="#F59E0B", size=10, family="Plus Jakarta Sans")
+        )
+        fig_quad.add_annotation(
+            x=25, y=15, text="Cold Targets (Low Fit + Low Intent)",
+            showarrow=False, font=dict(color="#64748B", size=10, family="Plus Jakarta Sans")
+        )
+        
+        fig_quad.update_layout(
+            **PLOTLY_LAYOUT_DEFAULTS,
+            xaxis=dict(range=[0, 105], title="ICP Score (Fit)"),
+            yaxis=dict(range=[0, 105], title="Buying Signal Score (Intent)"),
+            height=480
+        )
+        
+        st.plotly_chart(fig_quad, use_container_width=True)
     
     st.markdown("---")
 
@@ -209,7 +206,6 @@ def render_revenue_market_intelligence(df: pd.DataFrame) -> None:
     ind_macro = ind_macro.merge(ind_pipeline, on="Industry")
     ind_macro = ind_macro.sort_values(by="avg_opp", ascending=False)
     
-    st.markdown('<div class="saas-card">', unsafe_allow_html=True)
     html_rows = []
     for _, row in ind_macro.iterrows():
         html_rows.append(f"""
@@ -224,20 +220,21 @@ def render_revenue_market_intelligence(df: pd.DataFrame) -> None:
         """)
         
     st.markdown(f"""
-        <table style="width:100%; border-collapse:collapse; font-size:0.88rem; text-align:left;">
-            <thead>
-                <tr style="background-color:#111827; border-bottom:2px solid #253047; color:#9CA3AF;">
-                    <th style="padding:12px;">Industry Sector</th>
-                    <th style="padding:12px; text-align:center;">Average ICP Score</th>
-                    <th style="padding:12px; text-align:center;">Average Buying Signal</th>
-                    <th style="padding:12px; text-align:center;">Average GTM Index</th>
-                    <th style="padding:12px; text-align:center;">Total Accounts</th>
-                    <th style="padding:12px; text-align:right;">Simulated Pipeline</th>
-                </tr>
-            </thead>
-            <tbody>
-                {"".join(html_rows)}
-            </tbody>
-        </table>
-    </div>
+        <div class="saas-card">
+            <table style="width:100%; border-collapse:collapse; font-size:0.88rem; text-align:left;">
+                <thead>
+                    <tr style="background-color:#111827; border-bottom:2px solid #253047; color:#9CA3AF;">
+                        <th style="padding:12px;">Industry Sector</th>
+                        <th style="padding:12px; text-align:center;">Average ICP Score</th>
+                        <th style="padding:12px; text-align:center;">Average Buying Signal</th>
+                        <th style="padding:12px; text-align:center;">Average GTM Index</th>
+                        <th style="padding:12px; text-align:center;">Total Accounts</th>
+                        <th style="padding:12px; text-align:right;">Simulated Pipeline</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {"".join(html_rows)}
+                </tbody>
+            </table>
+        </div>
     """, unsafe_allow_html=True)
