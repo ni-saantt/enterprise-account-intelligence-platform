@@ -7,7 +7,6 @@ and database sync.
 import streamlit as st
 import pandas as pd
 import os
-import uuid
 from datetime import datetime
 
 # Import database routines
@@ -37,7 +36,6 @@ from utils.helpers import generate_sample_data
 # Page Setup
 st.set_page_config(
     page_title="Enterprise GTM Account Intelligence",
-    page_icon="🎯",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -45,15 +43,12 @@ st.set_page_config(
 # Apply premium SaaS CSS styles
 st.markdown(SAAS_THEME_CSS, unsafe_allow_html=True)
 
-# ------------------ CORE PLATFORM INITIALIZATION ------------------
 # Ensure database exists
 init_db()
 
 # Initialize session states
 if "active_batch_id" not in st.session_state:
     st.session_state.active_batch_id = None
-if "recalc_triggered" not in st.session_state:
-    st.session_state.recalc_triggered = False
 
 def process_and_save_data(df_raw: pd.DataFrame, batch_name: str, weights: dict) -> str:
     """Runs all scoring, segmenting, mapping, and summaries on raw data, then saves to DB."""
@@ -136,40 +131,39 @@ def process_and_save_data(df_raw: pd.DataFrame, batch_name: str, weights: dict) 
 
 # ------------------ SIDEBAR CONTROL PANEL ------------------
 st.sidebar.markdown(
-    '<div style="text-align: center; margin-bottom: 20px;">'
-    '<h2 style="color: #4f46e5; margin-bottom: 0;">Enterprise GTM</h2>'
-    '<p style="color: #64748b; font-size: 0.85rem; margin-top: 2px;">Account Intelligence Engine</p>'
+    '<div style="text-align: center; margin-bottom: 25px; margin-top: 15px;">'
+    '<h2 style="color: #FFFFFF; font-weight: 800; font-size:1.55rem; margin-bottom: 0;">ENTERPRISE GTM</h2>'
+    '<p style="color: #64748B; font-size: 0.8rem; margin-top: 3px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Sales Account Intelligence</p>'
     '</div>', 
     unsafe_allow_html=True
 )
 
-# 1. Navigation Panel
-st.sidebar.markdown('<p style="font-weight:600; color:#475569; margin-bottom:5px;">📌 Navigation</p>', unsafe_allow_html=True)
+# 1. Navigation Panel (Pure text-based, styled via saas CSS)
+st.sidebar.markdown('<p style="font-weight:700; font-size:0.75rem; color:#4B5563; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px;">Navigation</p>', unsafe_allow_html=True)
 nav_choice = st.sidebar.radio(
-    label="Go To Page",
+    label="Navigation",
     options=[
-        "⚡ GTM Command Center",
-        "📊 Overview Analytics",
-        "🔍 Account Prioritization",
-        "💰 Revenue & Market Intelligence"
+        "Command Center",
+        "Overview Analytics",
+        "Account Prioritization",
+        "Revenue & Market"
     ],
     label_visibility="collapsed"
 )
 
-st.sidebar.markdown("---")
+st.sidebar.markdown('<div style="margin: 20px 0; border-top: 1px solid #253047;"></div>', unsafe_allow_html=True)
 
 # 2. Upload / Batch Controls
-st.sidebar.markdown('<p style="font-weight:600; color:#475569; margin-bottom:5px;">📁 Data Ingestion</p>', unsafe_allow_html=True)
-uploaded_file = st.sidebar.file_uploader("Upload Company CSV", type=["csv"], help="CSV must contain fields: Company Name, Industry, Funding Stage, Employee Count, Location, Hiring Activity, Recent Funding, Expansion Status")
+st.sidebar.markdown('<p style="font-weight:700; font-size:0.75rem; color:#4B5563; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px;">Data Ingestion</p>', unsafe_allow_html=True)
+uploaded_file = st.sidebar.file_uploader("Upload Company CSV", type=["csv"], label_visibility="collapsed")
 
 # Manage existing batches
 batches = list_batches()
 
 # Show dynamic load button if no batches exist
 if not batches:
-    if st.sidebar.button("💡 Load Demo Dataset (100 Startups)", use_container_width=True):
+    if st.sidebar.button("Load Demo Dataset", use_container_width=True):
         sample_path = os.path.join("data", "sample_companies.csv")
-        # Ensure sample exists
         if not os.path.exists(sample_path):
             generate_sample_data(sample_path)
             
@@ -203,13 +197,11 @@ else:
 if uploaded_file is not None:
     try:
         df_uploaded = pd.read_csv(uploaded_file)
-        # Check required columns
         req_cols = ["Company Name", "Industry", "Funding Stage", "Employee Count", "Location", "Hiring Activity", "Recent Funding", "Expansion Status"]
         missing_cols = [c for c in req_cols if c not in df_uploaded.columns]
         
         if not missing_cols:
-            if st.sidebar.button("🚀 Process & Index CSV", use_container_width=True):
-                # Calculate weights map from sidebar
+            if st.sidebar.button("Process & Index CSV", use_container_width=True):
                 weights = {
                     "industry": st.session_state.get("wt_ind", 25),
                     "funding": st.session_state.get("wt_fund", 25),
@@ -219,7 +211,7 @@ if uploaded_file is not None:
                 }
                 new_batch_id = process_and_save_data(df_uploaded, uploaded_file.name.replace(".csv", ""), weights)
                 st.session_state.active_batch_id = new_batch_id
-                st.sidebar.success("CSV indexed and saved successfully!")
+                st.sidebar.success("CSV indexed successfully.")
                 st.rerun()
         else:
             st.sidebar.error(f"Missing columns: {', '.join(missing_cols)}")
@@ -228,17 +220,15 @@ if uploaded_file is not None:
 
 # Sidebar Delete batch
 if st.session_state.active_batch_id:
-    if st.sidebar.button("🗑 Delete Selected Batch", use_container_width=True):
+    if st.sidebar.button("Delete Active Batch", use_container_width=True):
         delete_batch(st.session_state.active_batch_id)
         st.session_state.active_batch_id = None
-        st.sidebar.warning("Batch deleted.")
         st.rerun()
 
-st.sidebar.markdown("---")
+st.sidebar.markdown('<div style="margin: 20px 0; border-top: 1px solid #253047;"></div>', unsafe_allow_html=True)
 
 # 3. Dynamic ICP Weights Customizer
-st.sidebar.markdown('<p style="font-weight:600; color:#475569; margin-bottom:2px;">⚙ Config: ICP Score Weights</p>', unsafe_allow_html=True)
-st.sidebar.markdown('<p style="font-size:0.8rem; color:#64748b; margin-top:0; margin-bottom:10px;">Adjust weights to recalculate fitting scores instantly.</p>', unsafe_allow_html=True)
+st.sidebar.markdown('<p style="font-weight:700; font-size:0.75rem; color:#4B5563; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:5px;">ICP Score Weights</p>', unsafe_allow_html=True)
 
 wt_ind = st.sidebar.slider("Industry Match Weight", 0, 50, 25, key="wt_ind")
 wt_fund = st.sidebar.slider("Funding Stage Weight", 0, 50, 25, key="wt_fund")
@@ -249,24 +239,19 @@ wt_loc = st.sidebar.slider("Location Match Weight", 0, 50, 10, key="wt_loc")
 sum_wts = wt_ind + wt_fund + wt_emp + wt_hiring + wt_loc
 
 if sum_wts == 100:
-    st.sidebar.markdown(f'<p style="color:#10b981; font-weight:600; font-size:0.85rem; margin-top:-5px;">✔ Weights sum: {sum_wts}% (Balanced)</p>', unsafe_allow_html=True)
+    st.sidebar.markdown(f'<p style="color:#22C55E; font-weight:600; font-size:0.8rem; margin-top:-5px;">Weights sum: {sum_wts}% (Balanced)</p>', unsafe_allow_html=True)
 else:
-    st.sidebar.markdown(f'<p style="color:#ef4444; font-weight:600; font-size:0.85rem; margin-top:-5px;">⚠ Weights sum: {sum_wts}% (Must equal 100%)</p>', unsafe_allow_html=True)
+    st.sidebar.markdown(f'<p style="color:#EF4444; font-weight:600; font-size:0.8rem; margin-top:-5px;">Weights sum: {sum_wts}% (Must equal 100%)</p>', unsafe_allow_html=True)
 
 # Recalculate button for active batch
 if st.session_state.active_batch_id and sum_wts == 100:
-    if st.sidebar.button("🔄 Recalculate Scoring Fits", use_container_width=True):
-        # Fetch current batch raw records
+    if st.sidebar.button("Recalculate Scoring Fits", use_container_width=True):
         raw_records = load_companies_for_batch(st.session_state.active_batch_id)
         if raw_records:
-            # We convert records to raw format to run calculations
             df_raw = pd.DataFrame(raw_records)
-            
-            # Extract batch base name (strip off the datetime suffix if possible)
             parts = st.session_state.active_batch_id.split("_")
             base_name = parts[0] if len(parts) > 0 else "recalc_batch"
             
-            # Recalculate and save as a new batch
             weights = {
                 "industry": wt_ind,
                 "funding": wt_fund,
@@ -275,13 +260,9 @@ if st.session_state.active_batch_id and sum_wts == 100:
                 "location": wt_loc
             }
             
-            # Delete old batch
             delete_batch(st.session_state.active_batch_id)
-            
-            # Save new recalculated batch
             new_batch_id = process_and_save_data(df_raw, base_name, weights)
             st.session_state.active_batch_id = new_batch_id
-            st.sidebar.success("Recalculation complete!")
             st.rerun()
 
 # ------------------ LOAD AND ROUTE PAGE DATA ------------------
@@ -293,11 +274,11 @@ else:
     df_active = pd.DataFrame()
 
 # Page Routing
-if nav_choice == "⚡ GTM Command Center":
+if nav_choice == "Command Center":
     render_command_center(df_active)
-elif nav_choice == "📊 Overview Analytics":
+elif nav_choice == "Overview Analytics":
     render_overview(df_active)
-elif nav_choice == "🔍 Account Prioritization":
+elif nav_choice == "Account Prioritization":
     render_account_analysis(df_active)
-elif nav_choice == "💰 Revenue & Market Intelligence":
+elif nav_choice == "Revenue & Market":
     render_revenue_market_intelligence(df_active)

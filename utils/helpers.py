@@ -144,7 +144,7 @@ def get_tier_badge(tier: str) -> str:
         tier_class = "badge-tier1"
     elif tier == "Tier 2":
         tier_class = "badge-tier2"
-    return f'<span class="badge {tier_class}">{tier}</span>'
+    return f'<span class="saas-badge {tier_class}">{tier}</span>'
 
 
 def get_priority_badge(priority: str) -> str:
@@ -154,7 +154,7 @@ def get_priority_badge(priority: str) -> str:
         p_class = "badge-high"
     elif priority.upper() == "MEDIUM":
         p_class = "badge-medium"
-    return f'<span class="badge {p_class}">{priority}</span>'
+    return f'<span class="saas-badge {p_class}">{priority}</span>'
 
 
 def get_opportunity_badge(level: str) -> str:
@@ -166,7 +166,7 @@ def get_opportunity_badge(level: str) -> str:
         o_class = "badge-high-opp"
     elif level == "Moderate Opportunity":
         o_class = "badge-mod-opp"
-    return f'<span class="badge {o_class}">{level}</span>'
+    return f'<span class="saas-badge {o_class}">{level}</span>'
 
 
 def get_buying_signal_badge(level: str) -> str:
@@ -176,7 +176,7 @@ def get_buying_signal_badge(level: str) -> str:
         b_class = "badge-high"
     elif level.upper() == "MEDIUM":
         b_class = "badge-medium"
-    return f'<span class="badge {b_class}">{level}</span>'
+    return f'<span class="saas-badge {b_class}">{level}</span>'
 
 
 def to_excel_bytes(df: Any) -> bytes:
