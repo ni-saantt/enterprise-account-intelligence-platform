@@ -420,6 +420,15 @@ SAAS_THEME_CSS = """
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
     }
     
+    div[data-testid="stVerticalBlockBorderWrapper"] div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        margin-bottom: 0 !important;
+        box-shadow: none !important;
+        height: auto !important;
+    }
+    
     /* Specific Container Key Modifiers */
     div[data-testid="stVerticalBlockBorderWrapper"].st-key-tab-container {
         border-top: none !important;

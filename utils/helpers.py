@@ -192,3 +192,97 @@ def to_csv_bytes(df: Any) -> bytes:
     """Converts a pandas DataFrame into a bytes buffer formatted as CSV."""
     import pandas as pd
     return df.to_csv(index=False).encode('utf-8')
+
+
+def clean_html(html_str: str) -> str:
+    """Strips leading/trailing whitespace from each line of HTML strings to prevent code block escaping."""
+    if not html_str:
+        return ""
+    return "\n".join(line.strip() for line in html_str.split("\n"))
+
+
+def get_icp_score_breakdown(company: dict, weights: dict = None) -> dict:
+    """Returns factor contributions for explainability of the ICP score."""
+    from utils.constants import DEFAULT_SUB_WEIGHTS, ICP_FACTOR_MAX_POINTS
+    if weights is None:
+        weights = {"industry": 25, "funding": 25, "employee": 20, "hiring": 20, "location": 10}
+        
+    sub_weights = DEFAULT_SUB_WEIGHTS
+    
+    # 1. Industry
+    industry = company.get("Industry", "Other")
+    ind_points = sub_weights.get("industry", {}).get(industry, 5)
+    max_ind_points = ICP_FACTOR_MAX_POINTS.get("industry", 25)
+    industry_contrib = (ind_points / max_ind_points) * weights.get("industry", 25)
+    
+    # 2. Funding
+    funding = company.get("Funding Stage", "Other")
+    funding_points = sub_weights.get("funding", {}).get(funding, 5)
+    max_fund_points = ICP_FACTOR_MAX_POINTS.get("funding", 25)
+    funding_contrib = (funding_points / max_fund_points) * weights.get("funding", 25)
+    
+    # 3. Employee
+    try:
+        emp_count = int(company.get("Employee Count", 0))
+    except (ValueError, TypeError):
+        emp_count = 0
+    emp_sub_weights = sub_weights.get("employee", {})
+    if 50 <= emp_count <= 500:
+        emp_points = emp_sub_weights.get("ideal", 20)
+    elif 10 <= emp_count < 50 or 501 <= emp_count <= 1000:
+        emp_points = emp_sub_weights.get("sub_ideal", 12)
+    else:
+        emp_points = emp_sub_weights.get("other", 5)
+    max_emp_points = ICP_FACTOR_MAX_POINTS.get("employee", 20)
+    employee_contrib = (emp_points / max_emp_points) * weights.get("employee", 20)
+    
+    # 4. Hiring
+    hiring = company.get("Hiring Activity", "None")
+    hiring_points = sub_weights.get("hiring", {}).get(hiring, 0)
+    max_hiring_points = ICP_FACTOR_MAX_POINTS.get("hiring", 20)
+    hiring_contrib = (hiring_points / max_hiring_points) * weights.get("hiring", 20)
+    
+    # 5. Location
+    location = company.get("Location", "Other")
+    loc_points = sub_weights.get("location", {}).get(location, 2)
+    max_loc_points = ICP_FACTOR_MAX_POINTS.get("location", 10)
+    location_contrib = (loc_points / max_loc_points) * weights.get("location", 10)
+    
+    return {
+        "Industry Match": round(industry_contrib, 1),
+        "Funding Stage Match": round(funding_contrib, 1),
+        "Employee Count Match": round(employee_contrib, 1),
+        "Hiring Activity Match": round(hiring_contrib, 1),
+        "Location Match": round(location_contrib, 1)
+    }
+
+
+def get_next_batch_version_name(filename: str, db_path: str = None) -> str:
+    """Calculates auto-incrementing file suffix versions to prevent silent overwrites."""
+    from database.database import list_batches
+    try:
+        batches = list_batches(only_active=False, db_path=db_path)
+    except Exception:
+        return filename
+        
+    base_name = filename.replace(".csv", "")
+    
+    # Find existing versions
+    existing_versions = []
+    for b in batches:
+        b_file = b.get("source_filename", "")
+        b_name = b_file.replace(".csv", "")
+        if b_name == base_name:
+            existing_versions.append(1)
+        elif b_name.startswith(f"{base_name}_v"):
+            try:
+                v_num = int(b_name.split("_v")[-1])
+                existing_versions.append(v_num)
+            except ValueError:
+                pass
+                
+    if existing_versions:
+        next_v = max(existing_versions) + 1
+        return f"{base_name}_v{next_v}.csv"
+        
+    return filename

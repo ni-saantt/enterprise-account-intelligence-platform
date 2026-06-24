@@ -1,38 +1,46 @@
 """
-Account Analysis Page for Enterprise GTM Account Intelligence Platform.
-Implements the interactive prioritization table and the tabbed account deep-dive profile inspector.
-Removes all raw HTML tables in the main list to prevent search block overlay bugs.
+Account Prioritization Page for Enterprise GTM Account Intelligence Platform.
+Implements filtering, sorting, top 20 opportunity slices, and scoring explainability.
+Clean B2B SaaS layout with Lucide SVG icons, dataframe configurations, and inspector details.
 """
 
 import streamlit as st
 import pandas as pd
 from typing import Dict, Any, List
 from utils.constants import SVG_ICONS
-from utils.helpers import to_excel_bytes, to_csv_bytes
+from utils.helpers import to_excel_bytes, to_csv_bytes, clean_html, get_icp_score_breakdown
 
-def render_account_analysis(df: pd.DataFrame) -> None:
+def render_account_analysis(df: pd.DataFrame, weights: dict = None) -> None:
     """Renders the account prioritization grid and detail tab-viewer."""
     if df.empty:
-        st.info("No account data loaded. Please upload a CSV file or load sample data from the sidebar.")
+        st.info("No account data loaded. Please upload a CSV file or load sample data in the Data Integration tab.")
         return
         
-    st.markdown('<h1 style="margin-bottom:0; color:#FFFFFF;">Account Intelligence</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="color:#64748B; font-size:1rem; margin-top:2px; margin-bottom:24px;">Filter, segment, export, and audit detailed account execution playbooks.</p>', unsafe_allow_html=True)
+    st.markdown('<h1 style="margin-bottom:0; color:#FFFFFF;">Account Prioritization</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#64748B; font-size:1rem; margin-top:2px; margin-bottom:24px;">Filter, sort, and priority list the top GTM opportunities with deep explainability.</p>', unsafe_allow_html=True)
     
     # ------------------ SAAS FILTERS BLOCK ------------------
     with st.container(border=True):
-        f_col1, f_col2, f_col3, f_col4 = st.columns(4)
-        
-        with f_col1:
-            # Search Box - single text input, styled via dark CSS
-            search_query = st.text_input("Search Company", value="", placeholder="Search by name...", label_visibility="collapsed")
-        with f_col2:
+        st.markdown('<div class="saas-card-title">Search & Prioritization Filters</div>', unsafe_allow_html=True)
+        row1_c1, row1_c2, row1_c3 = st.columns(3)
+        with row1_c1:
+            search_query = st.text_input("Search Company", value="", placeholder="Search by name...")
+        with row1_c2:
             selected_tiers = st.multiselect("ABM Tier", options=["Tier 1", "Tier 2", "Tier 3"])
-        with f_col3:
+        with row1_c3:
             selected_industries = st.multiselect("Industry Vertical", options=sorted(df["Industry"].unique()))
-        with f_col4:
-            selected_priorities = st.multiselect("Outreach Priority", options=["High", "Medium", "Low"])
-    
+            
+        row2_c1, row2_c2, row2_c3 = st.columns(3)
+        with row2_c1:
+            selected_locations = st.multiselect("Location / Region", options=sorted(df["Location"].unique()))
+        with row2_c2:
+            selected_stages = st.multiselect("Funding Stage", options=sorted(df["Funding Stage"].unique()))
+        with row2_c3:
+            sort_by = st.selectbox(
+                "Sort Results By",
+                options=["Highest Score", "Highest Intent", "Highest Growth"]
+            )
+            
     # Apply filters
     filtered_df = df.copy()
     if search_query:
@@ -41,26 +49,35 @@ def render_account_analysis(df: pd.DataFrame) -> None:
         filtered_df = filtered_df[filtered_df["abm_tier"].isin(selected_tiers)]
     if selected_industries:
         filtered_df = filtered_df[filtered_df["Industry"].isin(selected_industries)]
-    if selected_priorities:
-        filtered_df = filtered_df[filtered_df["priority_level"].isin(selected_priorities)]
+    if selected_locations:
+        filtered_df = filtered_df[filtered_df["Location"].isin(selected_locations)]
+    if selected_stages:
+        filtered_df = filtered_df[filtered_df["Funding Stage"].isin(selected_stages)]
         
-    # Active filter information
-    active_filters_count = (1 if search_query else 0) + len(selected_tiers) + len(selected_industries) + len(selected_priorities)
+    # Apply sorting
+    if sort_by == "Highest Score":
+        filtered_df = filtered_df.sort_values(by="icp_score", ascending=False)
+    elif sort_by == "Highest Intent":
+        filtered_df = filtered_df.sort_values(by="buying_signal_score", ascending=False)
+    elif sort_by == "Highest Growth":
+        filtered_df = filtered_df.sort_values(by="gtm_opportunity_score", ascending=False)
+        
+    # Slice to Top 20
+    top_opportunities = filtered_df.head(20)
     
     # Grid metrics summary row
     act_col1, act_col2 = st.columns([8, 4])
     with act_col1:
         st.markdown(
             f'<div style="font-size: 0.9rem; color: #9CA3AF; margin-top: 10px;">'
-            f'Showing <b>{len(filtered_df)}</b> of <b>{len(df)}</b> accounts. Active filters: <b>{active_filters_count}</b>'
+            f'Showing Top <b>{len(top_opportunities)}</b> opportunities of <b>{len(filtered_df)}</b> filtered accounts. (Dataset size: {len(df)})'
             f'</div>', 
             unsafe_allow_html=True
         )
     with act_col2:
-        # Excel/CSV download buttons
         dl_col1, dl_col2 = st.columns(2)
         
-        export_df = filtered_df[[
+        export_df = top_opportunities[[
             "Company Name", "Industry", "Funding Stage", "Employee Count", "Location", 
             "Hiring Activity", "Recent Funding", "Expansion Status", "icp_score", 
             "abm_tier", "buying_signal_score", "buying_signal_level", "market_opportunity_score",
@@ -72,7 +89,7 @@ def render_account_analysis(df: pd.DataFrame) -> None:
             st.download_button(
                 label="Export Excel",
                 data=to_excel_bytes(export_df),
-                file_name="gtm_intelligence_accounts.xlsx",
+                file_name="gtm_priority_accounts.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True
             )
@@ -80,36 +97,32 @@ def render_account_analysis(df: pd.DataFrame) -> None:
             st.download_button(
                 label="Export CSV",
                 data=to_csv_bytes(export_df),
-                file_name="gtm_intelligence_accounts.csv",
+                file_name="gtm_priority_accounts.csv",
                 mime="text/csv",
                 use_container_width=True
             )
 
     # ------------------ NATIVE ENTERPRISE DATAFRAME ------------------
-    # Pre-formatting dataframe for native rendering (no HTML raw tags visible!)
-    grid_df = filtered_df[[
-        "Company Name", "Industry", "icp_score", "buying_signal_score", 
-        "gtm_opportunity_score", "abm_tier", "priority_level", "primary_contact"
+    grid_df = top_opportunities[[
+        "Company Name", "Industry", "Location", "icp_score", "buying_signal_score", 
+        "gtm_opportunity_score", "abm_tier"
     ]].copy()
     
-    # Rename columns for presentation
     grid_df.columns = [
-        "Company", "Industry", "ICP Fit", "Buying Signal Score", 
-        "Opportunity Score", "ABM Tier", "Outreach Priority", "Primary Target Contact"
+        "Company", "Industry", "Location", "ICP Fit Score", "Buying Signal Score", 
+        "GTM Opportunity Score", "ABM Tier"
     ]
     
-    # Render interactive st.dataframe with custom configs (progress bars for scores!)
     st.dataframe(
         grid_df,
         column_config={
             "Company": st.column_config.TextColumn("Company", width="medium"),
             "Industry": st.column_config.TextColumn("Industry", width="small"),
-            "ICP Fit": st.column_config.ProgressColumn("ICP Fit Score", min_value=0, max_value=100, format="%d"),
+            "Location": st.column_config.TextColumn("Location", width="small"),
+            "ICP Fit Score": st.column_config.ProgressColumn("ICP Fit Score", min_value=0, max_value=100, format="%d"),
             "Buying Signal Score": st.column_config.ProgressColumn("Buying Signal", min_value=0, max_value=100, format="%d"),
-            "Opportunity Score": st.column_config.ProgressColumn("GTM Opportunity Score", min_value=0, max_value=100, format="%d"),
-            "ABM Tier": st.column_config.TextColumn("ABM Tier", width="small"),
-            "Outreach Priority": st.column_config.TextColumn("Outreach Priority", width="small"),
-            "Primary Target Contact": st.column_config.TextColumn("Target Contact", width="medium")
+            "GTM Opportunity Score": st.column_config.ProgressColumn("Opportunity Score", min_value=0, max_value=100, format="%d"),
+            "ABM Tier": st.column_config.TextColumn("ABM Tier", width="small")
         },
         use_container_width=True,
         hide_index=True
@@ -120,13 +133,17 @@ def render_account_analysis(df: pd.DataFrame) -> None:
     # ------------------ TABBED DEEP DIVE AUDITOR ------------------
     st.markdown('<h2 style="color:#FFFFFF; margin-top:10px; margin-bottom:12px;">Account Auditor</h2>', unsafe_allow_html=True)
     
-    company_options = sorted(df["Company Name"].unique())
+    company_options = sorted(top_opportunities["Company Name"].unique()) if not top_opportunities.empty else []
+    
+    if not company_options:
+        st.info("No matching accounts found in the Top 20 opportunities grid.")
+        return
+        
     selected_company_name = st.selectbox("Select Target Account to Audit", options=company_options, label_visibility="collapsed")
     
     if selected_company_name:
         company_row = df[df["Company Name"] == selected_company_name].iloc[0]
         
-        # Tabs for Inspector: Overview, Scoring, Decision Makers, Playbook, Signals, Summary
         tab_overview, tab_scoring, tab_contacts, tab_playbook, tab_signals, tab_summary = st.tabs([
             "Overview", "Scoring", "Decision Makers", "Playbook", "Signals", "Summary"
         ])
@@ -136,25 +153,25 @@ def render_account_analysis(df: pd.DataFrame) -> None:
             with st.container(border=True, key="tab-container"):
                 col_l, col_r = st.columns(2)
                 with col_l:
-                    st.markdown(f"""
+                    st.markdown(clean_html(f"""
                         <table style="width:100%; font-size:0.92rem; border-collapse:collapse; color:#E5E7EB;">
                             <tr style="border-bottom:1px solid #253047;"><td style="padding:10px 0; font-weight:600; color:#9CA3AF; width:40%;">Company Name</td><td style="padding:10px 0; font-weight:700; color:#FFFFFF;">{company_row['Company Name']}</td></tr>
                             <tr style="border-bottom:1px solid #253047;"><td style="padding:10px 0; font-weight:600; color:#9CA3AF;">Industry Vertical</td><td style="padding:10px 0;">{company_row['Industry']}</td></tr>
                             <tr style="border-bottom:1px solid #253047;"><td style="padding:10px 0; font-weight:600; color:#9CA3AF;">HQ Location</td><td style="padding:10px 0;">{company_row['Location']}</td></tr>
                             <tr style="border-bottom:1px solid #253047;"><td style="padding:10px 0; font-weight:600; color:#9CA3AF;">Firmographic Size</td><td style="padding:10px 0;">{company_row['Employee Count']} ({company_row['firmographic_segment']})</td></tr>
                         </table>
-                    """, unsafe_allow_html=True)
+                    """), unsafe_allow_html=True)
                 with col_r:
-                    st.markdown(f"""
+                    st.markdown(clean_html(f"""
                         <table style="width:100%; font-size:0.92rem; border-collapse:collapse; color:#E5E7EB;">
                             <tr style="border-bottom:1px solid #253047;"><td style="padding:10px 0; font-weight:600; color:#9CA3AF; width:40%;">Funding Stage</td><td style="padding:10px 0;">{company_row['Funding Stage']}</td></tr>
                             <tr style="border-bottom:1px solid #253047;"><td style="padding:10px 0; font-weight:600; color:#9CA3AF;">Hiring Intensity</td><td style="padding:10px 0;">{company_row['Hiring Activity']}</td></tr>
                             <tr style="border-bottom:1px solid #253047;"><td style="padding:10px 0; font-weight:600; color:#9CA3AF;">Funding Velocity</td><td style="padding:10px 0;">{company_row['Recent Funding'] == 'Yes' and 'Recently Funded' or 'Stable'}</td></tr>
                             <tr style="border-bottom:1px solid #253047;"><td style="padding:10px 0; font-weight:600; color:#9CA3AF;">Expansion Status</td><td style="padding:10px 0;">{company_row['Expansion Status']}</td></tr>
                         </table>
-                    """, unsafe_allow_html=True)
+                    """), unsafe_allow_html=True)
             
-        # Tab 2: Scoring
+        # Tab 2: Scoring & Explainability
         with tab_scoring:
             with st.container(border=True, key="tab-container"):
                 sc_col1, sc_col2 = st.columns(2)
@@ -164,8 +181,7 @@ def render_account_analysis(df: pd.DataFrame) -> None:
                     mo = company_row['market_opportunity_score']
                     gtm = company_row['gtm_opportunity_score']
                     
-                    # Visual score progress bars
-                    st.markdown(f"""
+                    st.markdown(clean_html(f"""
                         <div style="margin-bottom:18px;">
                             <div style="display:flex; justify-content:between; align-items:center; font-size:0.85rem; margin-bottom:5px;">
                                 <span style="font-weight:600; color:#FFFFFF;">ICP Fit Score</span>
@@ -197,9 +213,9 @@ def render_account_analysis(df: pd.DataFrame) -> None:
                             </div>
                             <div class="saas-progress-bar" style="height:10px;"><div class="saas-progress-value" style="width:{gtm}%; background-color:#22C55E;"></div></div>
                         </div>
-                    """, unsafe_allow_html=True)
+                    """), unsafe_allow_html=True)
                 with sc_col2:
-                    st.markdown(f"""
+                    st.markdown(clean_html(f"""
                         <div style="padding:16px; background-color:#111827; border:1px solid #253047; border-radius:8px; font-size:0.88rem; color:#9CA3AF; height: 100%;">
                             <strong style="color:#FFFFFF; display:block; margin-bottom:8px;">GTM Index Rationale:</strong>
                             The unified GTM Opportunity Score represents a weighted distribution of the customer fit:
@@ -212,15 +228,27 @@ def render_account_analysis(df: pd.DataFrame) -> None:
                                 Opportunity Level: <span style="color: #3B82F6;">{company_row['gtm_opportunity_level']}</span>
                             </div>
                         </div>
-                    """, unsafe_allow_html=True)
+                    """), unsafe_allow_html=True)
+                    
+            # Explainability Panel
+            breakdown = get_icp_score_breakdown(company_row, weights)
+            with st.container(border=True):
+                st.markdown('<div class="saas-card-title">ICP Factor Explainability Breakdown</div>', unsafe_allow_html=True)
+                ex_cols = st.columns(5)
+                for i, (factor, val) in enumerate(breakdown.items()):
+                    with ex_cols[i]:
+                        st.markdown(clean_html(f"""
+                            <div style="text-align:center; padding:12px; border:1px solid #253047; border-radius:8px; background-color:#111827;">
+                                <div style="font-size:0.72rem; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:0.02em;">{factor}</div>
+                                <div style="font-size:1.5rem; font-weight:700; color:#3B82F6; margin-top:4px;">+{val}</div>
+                            </div>
+                        """), unsafe_allow_html=True)
             
-        # Tab 3: Decision Makers
+        # Tab 3: Decision Makers & Persona Messaging
         with tab_contacts:
-            # Roles details builder
             primary_role = company_row['primary_contact']
             secondary_role = company_row['secondary_contact']
             
-            # Dynamic mock pain points based on persona role
             pain_points_map = {
                 "Founder": "Scaling early B2B pipelines, tooling overhead, finding repeatable channels.",
                 "CEO": "Corporate growth margins, pipeline predictability, macro industry shifts.",
@@ -234,8 +262,8 @@ def render_account_analysis(df: pd.DataFrame) -> None:
             primary_pain = pain_points_map.get(primary_role, "Sourcing reliable vendors, system integration.")
             secondary_pain = pain_points_map.get(secondary_role, "Operational scalability, data transparency.")
             
-            st.markdown(f"""
-                <div class="saas-card" style="border-top:none; border-radius:0 0 12px 12px;">
+            st.markdown(clean_html(f"""
+                <div class="saas-card" style="border-top:none; border-radius:0 0 12px 12px; padding: 20px;">
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
                         <!-- Primary contact card -->
                         <div style="background-color:#111827; border:1px solid #253047; border-radius:8px; padding:20px; display:flex; gap:16px;">
@@ -245,10 +273,10 @@ def render_account_analysis(df: pd.DataFrame) -> None:
                             <div>
                                 <span style="font-size:0.75rem; background-color:rgba(59, 130, 246, 0.15); color:#3B82F6; padding:2px 6px; border-radius:4px; font-weight:600;">Primary Target Contact</span>
                                 <div style="font-size:1.15rem; font-weight:700; color:#FFFFFF; margin-top:3px; margin-bottom:5px;">{primary_role}</div>
-                                <div style="font-size:0.85rem; color:#E5E7EB; margin-bottom:8px;"><b>Responsibility:</b> Core purchasing logic, tooling budget authorization.</div>
+                                <div style="font-size:0.85rem; color:#E5E7EB; margin-bottom:8px;"><b>Responsibility:</b> Tooling budget approval and strategic vendor relations.</div>
                                 <div style="font-size:0.82rem; color:#EF4444; margin-bottom:8px;"><b>Pain Point:</b> {primary_pain}</div>
                                 <div style="font-size:0.82rem; color:#22C55E; font-weight:600; padding:8px; background-color:#1A2235; border-radius:6px;">
-                                    <b>Outreach Angle:</b> Present ROI and operational speed improvements.
+                                    <b>Recommended Messaging:</b> "Congratulating you on team expansion. Let\'s evaluate our consolidated ROI solutions."
                                 </div>
                             </div>
                         </div>
@@ -261,10 +289,10 @@ def render_account_analysis(df: pd.DataFrame) -> None:
                             <div>
                                 <span style="font-size:0.75rem; background-color:rgba(16, 185, 129, 0.15); color:#10B981; padding:2px 6px; border-radius:4px; font-weight:600;">Secondary Target Contact</span>
                                 <div style="font-size:1.15rem; font-weight:700; color:#FFFFFF; margin-top:3px; margin-bottom:5px;">{secondary_role}</div>
-                                <div style="font-size:0.85rem; color:#E5E7EB; margin-bottom:8px;"><b>Responsibility:</b> Tooling evaluation, daily operational execution.</div>
+                                <div style="font-size:0.85rem; color:#E5E7EB; margin-bottom:8px;"><b>Responsibility:</b> Core operator and internal project champion.</div>
                                 <div style="font-size:0.82rem; color:#EF4444; margin-bottom:8px;"><b>Pain Point:</b> {secondary_pain}</div>
                                 <div style="font-size:0.82rem; color:#22C55E; font-weight:600; padding:8px; background-color:#1A2235; border-radius:6px;">
-                                    <b>Outreach Angle:</b> Highlight user adoption and frictionless workflows.
+                                    <b>Recommended Messaging:</b> "Let\'s automate your team\'s operational workflows and cut administrative friction."
                                 </div>
                             </div>
                         </div>
@@ -273,9 +301,9 @@ def render_account_analysis(df: pd.DataFrame) -> None:
                         <b>Executive Mapping Justification:</b> {company_row['contact_reasoning']}
                     </div>
                 </div>
-            """, unsafe_allow_html=True)
+            """), unsafe_allow_html=True)
             
-        # Tab 4: Playbook
+        # Tab 4: Playbook outreach steps
         with tab_playbook:
             playbook_steps = company_row["playbook"]
             day_labels = ["Day 1", "Day 3", "Day 7", "Day 14", "Day 21"]
@@ -291,48 +319,47 @@ def render_account_analysis(df: pd.DataFrame) -> None:
                     </div>
                 """)
                 
-            st.markdown(f"""
-                <div class="saas-card" style="border-top:none; border-radius:0 0 12px 12px;">
+            st.markdown(clean_html(f"""
+                <div class="saas-card" style="border-top:none; border-radius:0 0 12px 12px; padding: 20px;">
                     <div class="timeline-container">
                         {"".join(timeline_items)}
                     </div>
                 </div>
-            """, unsafe_allow_html=True)
+            """), unsafe_allow_html=True)
             
-        # Tab 5: Signals
+        # Tab 5: Growth & Risk Signals
         with tab_signals:
-            # Format custom signal checkboxes
             hiring_val = company_row["Hiring Activity"]
             funding_val = company_row["Recent Funding"]
             expansion_val = company_row["Expansion Status"]
             
-            st.markdown(f"""
-                <div class="saas-card" style="border-top:none; border-radius:0 0 12px 12px;">
+            st.markdown(clean_html(f"""
+                <div class="saas-card" style="border-top:none; border-radius:0 0 12px 12px; padding: 20px;">
                     <div style="font-size:0.92rem; color:#D1D5DB;">
                         <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
                             <span style="color:#22C55E;">{SVG_ICONS['check-circle']}</span>
-                            <span><b>Hiring Waves:</b> Detected <b>{hiring_val}</b> hiring activity.</span>
+                            <span><b>Hiring Intensity:</b> Mapped as <b>{hiring_val.upper()}</b>.</span>
                         </div>
                         <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
                             <span style="color:#22C55E;">{SVG_ICONS['check-circle']}</span>
-                            <span><b>Funding Velocity:</b> Recent Funding is <b>{funding_val == 'Yes' and 'ACTIVE' or 'STABLE'}</b> (Stage: {company_row['Funding Stage']}).</span>
+                            <span><b>Funding Momentum:</b> Recent Funding is <b>{funding_val == 'Yes' and 'ACTIVE' or 'STABLE'}</b> (Stage: {company_row['Funding Stage']}).</span>
                         </div>
                         <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
                             <span style="color:#22C55E;">{SVG_ICONS['check-circle']}</span>
-                            <span><b>Expansion signals:</b> Team footprint is <b>{expansion_val.upper()}</b>.</span>
+                            <span><b>Expansion velocity:</b> Mapped as <b>{expansion_val.upper()}</b>.</span>
                         </div>
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <span style="color:#22C55E;">{SVG_ICONS['check-circle']}</span>
-                            <span><b>Market Trend Signal:</b> Evaluated sector momentum score of <b>{company_row['market_opportunity_score']}/100</b>.</span>
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                            <span style="color:#EF4444;">⚠</span>
+                            <span><b>Risk Indicators:</b> {"High budget risk, monitor funding cycles" if funding_val == "No" and hiring_val == "None" else "No major risks detected. Strong ICP alignment."}</span>
                         </div>
                     </div>
                 </div>
-            """, unsafe_allow_html=True)
+            """), unsafe_allow_html=True)
             
-        # Tab 6: Summary
+        # Tab 6: Summary Narrative
         with tab_summary:
-            st.markdown(f"""
-                <div class="saas-card" style="border-top:none; border-radius:0 0 12px 12px; min-height: 200px;">
+            st.markdown(clean_html(f"""
+                <div class="saas-card" style="border-top:none; border-radius:0 0 12px 12px; min-height: 200px; padding: 20px;">
                     <div style="font-size:1.02rem; line-height:1.6; color:#D1D5DB;">{company_row["account_summary"]}</div>
                 </div>
-            """, unsafe_allow_html=True)
+            """), unsafe_allow_html=True)

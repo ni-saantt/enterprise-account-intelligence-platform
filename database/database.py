@@ -71,9 +71,22 @@ def init_db(db_path: str = None) -> None:
             top_industry TEXT,
             top_region TEXT,
             top_tier TEXT,
+            is_active INTEGER DEFAULT 1,
+            quality_score INTEGER DEFAULT 100,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    
+    # Run migrations for existing databases
+    try:
+        cursor.execute("ALTER TABLE batches ADD COLUMN is_active INTEGER DEFAULT 1")
+    except sqlite3.OperationalError:
+        pass
+        
+    try:
+        cursor.execute("ALTER TABLE batches ADD COLUMN quality_score INTEGER DEFAULT 100")
+    except sqlite3.OperationalError:
+        pass
     
     # Indexes
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_batch_id ON companies(batch_id)")
@@ -86,6 +99,7 @@ def save_company_batch(
     companies_list: List[Dict[str, Any]],
     batch_id: str,
     source_filename: str = "Unknown Source",
+    quality_score: int = 100,
     db_path: str = None
 ) -> None:
     """
@@ -115,9 +129,10 @@ def save_company_batch(
     # Save batch metadata
     cursor.execute("""
         INSERT OR REPLACE INTO batches (
-            batch_id, source_filename, record_count, average_icp, average_opp_score, top_industry, top_region, top_tier
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (batch_id, source_filename, record_count, avg_icp, avg_opp, top_ind, top_loc, top_tier))
+            batch_id, source_filename, record_count, average_icp, average_opp_score, 
+            top_industry, top_region, top_tier, is_active, quality_score
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+    """, (batch_id, source_filename, record_count, avg_icp, avg_opp, top_ind, top_loc, top_tier, quality_score))
     
     # Insert company data
     query = """
@@ -202,16 +217,17 @@ def load_companies_for_batch(batch_id: str, db_path: str = None) -> List[Dict[st
     return result
 
 
-def list_batches(db_path: str = None) -> List[Dict[str, Any]]:
+def list_batches(only_active: bool = False, db_path: str = None) -> List[Dict[str, Any]]:
     """Retrieves list of distinct batches from the metadata table."""
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     
-    cursor.execute("""
-        SELECT * FROM batches 
-        ORDER BY created_at DESC
-    """)
+    query = "SELECT * FROM batches"
+    if only_active:
+        query += " WHERE is_active = 1"
+    query += " ORDER BY created_at DESC"
     
+    cursor.execute(query)
     rows = cursor.fetchall()
     conn.close()
     
@@ -230,7 +246,11 @@ def list_batches(db_path: str = None) -> List[Dict[str, Any]]:
         # Re-query
         conn = get_db_connection(db_path)
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM batches ORDER BY created_at DESC")
+        query = "SELECT * FROM batches"
+        if only_active:
+            query += " WHERE is_active = 1"
+        query += " ORDER BY created_at DESC"
+        cursor.execute(query)
         rows = cursor.fetchall()
         conn.close()
         
@@ -273,10 +293,28 @@ def clone_batch(batch_id: str, clone_name: str, db_path: str = None) -> str:
     companies = load_companies_for_batch(batch_id, db_path=db_path)
     new_id = f"{clone_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     
+    # Get baseline quality score
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT quality_score FROM batches WHERE batch_id = ?", (batch_id,))
+    row = cursor.fetchone()
+    q_score = row["quality_score"] if row else 100
+    conn.close()
+    
     save_company_batch(
         companies_list=companies,
         batch_id=new_id,
         source_filename=clone_name,
+        quality_score=q_score,
         db_path=db_path
     )
     return new_id
+
+
+def set_batch_active_status(batch_id: str, is_active: int, db_path: str = None) -> None:
+    """Updates the is_active status of a batch."""
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE batches SET is_active = ? WHERE batch_id = ?", (is_active, batch_id))
+    conn.commit()
+    conn.close()

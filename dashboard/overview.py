@@ -1,6 +1,7 @@
 """
-Overview Dashboard for Enterprise GTM Account Intelligence Platform.
-Clean B2B SaaS layout with Lucide SVG icons, delta sparklines, and professional dark-theme Plotly charts.
+Analytics Page for Enterprise GTM Account Intelligence Platform.
+Implements drill-down focused collapsible analysis sections.
+Clean B2B SaaS layout with Lucide SVG icons, dark themes, and dynamic Plotly charts.
 """
 
 import streamlit as st
@@ -9,243 +10,24 @@ import plotly.express as px
 import plotly.graph_objects as go
 from typing import Dict, Any
 from utils.constants import SVG_ICONS, PLOTLY_LAYOUT_DEFAULTS
+from utils.helpers import clean_html
 
-def render_overview(df: pd.DataFrame) -> None:
-    """Renders the executive analytics dashboard."""
+def render_analytics(df: pd.DataFrame) -> None:
+    """Renders the collapsible drill-down analytics dashboard."""
     if df.empty:
-        st.info("No account data loaded. Please upload a CSV file or load sample data from the sidebar.")
+        st.info("No account data loaded. Please upload a CSV file or load sample data in the Data Integration tab.")
         return
         
-    st.markdown('<h1 style="margin-bottom:0; color:#FFFFFF;">GTM Analytics Overview</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="color:#64748B; font-size:1rem; margin-top:2px; margin-bottom:24px;">Executive GTM health trends, fit distributions, and intent analytics dashboards.</p>', unsafe_allow_html=True)
+    st.markdown('<h1 style="margin-bottom:0; color:#FFFFFF;">GTM Analytics</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#64748B; font-size:1rem; margin-top:2px; margin-bottom:24px;">Deep dataset drill-downs, segment breakdown matrices, and fit histograms.</p>', unsafe_allow_html=True)
     
-    # ------------------ COMPUTE KPI METRICS ------------------
-    total_accounts = len(df)
-    tier_1_count = len(df[df["abm_tier"] == "Tier 1"])
-    avg_icp = df["icp_score"].mean()
-    avg_buying = df["buying_signal_score"].mean()
-    avg_gtm = df["gtm_opportunity_score"].mean()
-    high_priority = len(df[df["priority_level"] == "High"])
-    
-    # Top Industry Segment
-    if not df["Industry"].mode().empty:
-        top_industry = df["Industry"].mode()[0]
-        top_industry_count = len(df[df["Industry"] == top_industry])
-    else:
-        top_industry = "N/A"
-        top_industry_count = 0
-        
-    # Highest Opportunity Company
-    highest_opp_row = df.sort_values(by="gtm_opportunity_score", ascending=False).iloc[0] if not df.empty else None
-    if highest_opp_row is not None:
-        highest_opp_name = highest_opp_row["Company Name"]
-        highest_opp_score = highest_opp_row["gtm_opportunity_score"]
-    else:
-        highest_opp_name = "N/A"
-        highest_opp_score = 0
-
-    # ------------------ RENDER METRICS CARDS (ROW 1) ------------------
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.markdown(f"""
-            <div class="saas-metric-card">
-                <div class="saas-metric-header">
-                    <span class="saas-metric-label">Total Accounts</span>
-                    <span style="color: #3B82F6;">{SVG_ICONS['building']}</span>
-                </div>
-                <div class="saas-metric-value-row">
-                    <h2 class="saas-metric-value">{total_accounts}</h2>
-                    <span class="saas-metric-delta delta-up">+12.4%</span>
-                </div>
-                <div class="sparkline-container">
-                    <svg width="120" height="24" viewBox="0 0 120 24" fill="none" stroke="#22C55E" stroke-width="1.5">
-                        <path d="M0 20 Q15 15 30 10 T60 12 T90 5 T120 2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"""
-            <div class="saas-metric-card">
-                <div class="saas-metric-header">
-                    <span class="saas-metric-label">Tier 1 Target</span>
-                    <span style="color: #F59E0B;">{SVG_ICONS['target']}</span>
-                </div>
-                <div class="saas-metric-value-row">
-                    <h2 class="saas-metric-value">{tier_1_count}</h2>
-                    <span class="saas-metric-delta delta-up">+{int(tier_1_count/total_accounts*100) if total_accounts > 0 else 0}%</span>
-                </div>
-                <div class="sparkline-container">
-                    <svg width="120" height="24" viewBox="0 0 120 24" fill="none" stroke="#3B82F6" stroke-width="1.5">
-                        <path d="M0 12 Q15 14 30 12 T60 13 T90 10 T120 8" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-    with col3:
-        st.markdown(f"""
-            <div class="saas-metric-card">
-                <div class="saas-metric-header">
-                    <span class="saas-metric-label">Avg ICP Fit</span>
-                    <span style="color: #3B82F6;">{SVG_ICONS['user']}</span>
-                </div>
-                <div class="saas-metric-value-row">
-                    <h2 class="saas-metric-value">{avg_icp:.1f}</h2>
-                    <span class="saas-metric-delta delta-up">+4.1%</span>
-                </div>
-                <div class="sparkline-container">
-                    <svg width="120" height="24" viewBox="0 0 120 24" fill="none" stroke="#22C55E" stroke-width="1.5">
-                        <path d="M0 10 Q15 15 30 18 T60 5 T90 8 T120 4" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-    with col4:
-        st.markdown(f"""
-            <div class="saas-metric-card">
-                <div class="saas-metric-header">
-                    <span class="saas-metric-label">Avg Buying Intent</span>
-                    <span style="color: #22C55E;">{SVG_ICONS['trending-up']}</span>
-                </div>
-                <div class="saas-metric-value-row">
-                    <h2 class="saas-metric-value">{avg_buying:.1f}</h2>
-                    <span class="saas-metric-delta delta-up">+8.3%</span>
-                </div>
-                <div class="sparkline-container">
-                    <svg width="120" height="24" viewBox="0 0 120 24" fill="none" stroke="#22C55E" stroke-width="1.5">
-                        <path d="M0 22 Q15 15 30 18 T60 8 T90 10 T120 4" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-    # ------------------ RENDER METRICS CARDS (ROW 2) ------------------
-    col5, col6, col7, col8 = st.columns(4)
-    with col5:
-        st.markdown(f"""
-            <div class="saas-metric-card">
-                <div class="saas-metric-header">
-                    <span class="saas-metric-label">Avg GTM Index</span>
-                    <span style="color: #3B82F6;">{SVG_ICONS['target']}</span>
-                </div>
-                <div class="saas-metric-value-row">
-                    <h2 class="saas-metric-value">{avg_gtm:.1f}</h2>
-                    <span class="saas-metric-delta delta-up">+5.2%</span>
-                </div>
-                <div class="sparkline-container">
-                    <svg width="120" height="24" viewBox="0 0 120 24" fill="none" stroke="#3B82F6" stroke-width="1.5">
-                        <path d="M0 15 Q15 12 30 18 T60 8 T90 14 T120 10" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-    with col6:
-        st.markdown(f"""
-            <div class="saas-metric-card">
-                <div class="saas-metric-header">
-                    <span class="saas-metric-label">High Priority</span>
-                    <span style="color: #EF4444;">{SVG_ICONS['activity']}</span>
-                </div>
-                <div class="saas-metric-value-row">
-                    <h2 class="saas-metric-value">{high_priority}</h2>
-                    <span class="saas-metric-delta delta-down" style="color:#EF4444 !important;">Active</span>
-                </div>
-                <div class="sparkline-container">
-                    <svg width="120" height="24" viewBox="0 0 120 24" fill="none" stroke="#EF4444" stroke-width="1.5">
-                        <path d="M0 5 Q15 12 30 10 T60 18 T90 12 T120 20" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-    with col7:
-        st.markdown(f"""
-            <div class="saas-metric-card">
-                <div class="saas-metric-header">
-                    <span class="saas-metric-label">Top Segment</span>
-                    <span style="color: #3B82F6;">{SVG_ICONS['briefcase']}</span>
-                </div>
-                <div class="saas-metric-value-row">
-                    <h2 class="saas-metric-value" style="font-size:1.3rem !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{top_industry}</h2>
-                    <span class="saas-metric-delta delta-up">{top_industry_count} acc</span>
-                </div>
-                <div class="sparkline-container">
-                    <svg width="120" height="24" viewBox="0 0 120 24" fill="none" stroke="#22C55E" stroke-width="1.5">
-                        <path d="M0 10 Q15 14 30 10 T60 15 T90 8 T120 2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-    with col8:
-        st.markdown(f"""
-            <div class="saas-metric-card">
-                <div class="saas-metric-header">
-                    <span class="saas-metric-label">Top Account</span>
-                    <span style="color: #22C55E;">{SVG_ICONS['rocket']}</span>
-                </div>
-                <div class="saas-metric-value-row">
-                    <h2 class="saas-metric-value" style="font-size:1.3rem !important; color:#10B981; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{highest_opp_name}</h2>
-                    <span class="saas-metric-delta delta-up">{highest_opp_score}</span>
-                </div>
-                <div class="sparkline-container">
-                    <svg width="120" height="24" viewBox="0 0 120 24" fill="none" stroke="#22C55E" stroke-width="1.5">
-                        <path d="M0 18 Q15 12 30 15 T60 8 T90 10 T120 4" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-    st.markdown("---")
-
-    # ------------------ CHART VISUALIZATIONS ------------------
     chart_color_sequence = ["#3B82F6", "#14B8A6", "#F59E0B", "#EF4444", "#8B5CF6", "#10B981"]
-    chart_col1, chart_col2 = st.columns(2)
     
-    with chart_col1:
-        # Chart 1: ICP Score Distribution (Histogram)
-        with st.container(border=True):
-            st.markdown(f'<div class="saas-card-title"><span style="color:#3B82F6;">{SVG_ICONS["bar-chart"]}</span><span>ICP Score Distribution</span></div>', unsafe_allow_html=True)
-            fig_icp = px.histogram(
-                df, 
-                x="icp_score", 
-                nbins=12, 
-                color_discrete_sequence=["#3B82F6"],
-                labels={"icp_score": "ICP Score", "count": "Count"}
-            )
-            fig_icp.update_layout(
-                **PLOTLY_LAYOUT_DEFAULTS,
-                height=280,
-                xaxis_title="ICP Score",
-                yaxis_title="Count",
-                bargap=0.08
-            )
-            st.plotly_chart(fig_icp, use_container_width=True)
-        
-        # Chart 2: ABM Tier Distribution (Pie)
-        with st.container(border=True):
-            st.markdown(f'<div class="saas-card-title"><span style="color:#F59E0B;">{SVG_ICONS["target"]}</span><span>ABM Tier Ratio</span></div>', unsafe_allow_html=True)
-            tier_counts = df["abm_tier"].value_counts().reset_index()
-            tier_counts.columns = ["ABM Tier", "Count"]
-            tier_colors = {"Tier 1": "#22C55E", "Tier 2": "#F59E0B", "Tier 3": "#64748B"}
-            fig_tier = px.pie(
-                tier_counts, 
-                values="Count", 
-                names="ABM Tier",
-                color="ABM Tier",
-                color_discrete_map=tier_colors,
-                hole=0.45
-            )
-            fig_tier.update_layout(
-                **PLOTLY_LAYOUT_DEFAULTS,
-                height=280,
-                legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5)
-            )
-            fig_tier.update_traces(textposition='inside', textinfo='percent+label')
-            st.plotly_chart(fig_tier, use_container_width=True)
-
-    with chart_col2:
-        # Chart 3: Industry Breakdown (Donut)
-        with st.container(border=True):
-            st.markdown(f'<div class="saas-card-title"><span style="color:#14B8A6;">{SVG_ICONS["briefcase"]}</span><span>Industry Segment Breakdown</span></div>', unsafe_allow_html=True)
+    # ------------------ 1. INDUSTRY ANALYSIS ------------------
+    with st.expander("💼 Industry Analysis", expanded=True):
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            st.markdown(clean_html(f'<div class="saas-card-title"><span style="color:#14B8A6;">{SVG_ICONS["briefcase"]}</span><span>Industry Distribution</span></div>'), unsafe_allow_html=True)
             ind_counts = df["Industry"].value_counts().reset_index()
             ind_counts.columns = ["Industry", "Count"]
             fig_ind = px.pie(
@@ -257,66 +39,155 @@ def render_overview(df: pd.DataFrame) -> None:
             )
             fig_ind.update_layout(
                 **PLOTLY_LAYOUT_DEFAULTS,
-                height=280,
+                height=260,
                 legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5)
             )
             fig_ind.update_traces(textposition='inside', textinfo='percent+label')
             st.plotly_chart(fig_ind, use_container_width=True)
-        
-        # Chart 4: Buying Signal Levels
-        with st.container(border=True):
-            st.markdown(f'<div class="saas-card-title"><span style="color:#EF4444;">{SVG_ICONS["activity"]}</span><span>Buying Signal Levels</span></div>', unsafe_allow_html=True)
-            signal_counts = df["buying_signal_level"].value_counts().reset_index()
-            signal_counts.columns = ["Buying Signal", "Count"]
-            signal_order = ["High", "Medium", "Low"]
-            signal_counts["Buying Signal"] = pd.Categorical(signal_counts["Buying Signal"], categories=signal_order, ordered=True)
-            signal_counts = signal_counts.sort_values("Buying Signal")
             
-            signal_colors = {"High": "#EF4444", "Medium": "#F59E0B", "Low": "#64748B"}
-            fig_signal = px.bar(
-                signal_counts,
-                x="Buying Signal",
+        with col2:
+            st.markdown(clean_html(f'<div class="saas-card-title"><span style="color:#3B82F6;">{SVG_ICONS["users"]}</span><span>Accounts count by Industry Sector</span></div>'), unsafe_allow_html=True)
+            st.dataframe(
+                ind_counts,
+                column_config={
+                    "Industry": st.column_config.TextColumn("Industry Sector"),
+                    "Count": st.column_config.NumberColumn("Total Accounts", format="%d")
+                },
+                use_container_width=True,
+                hide_index=True
+            )
+
+    # ------------------ 2. FUNDING ANALYSIS ------------------
+    with st.expander("💵 Funding Analysis", expanded=False):
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            st.markdown(clean_html(f'<div class="saas-card-title"><span style="color:#F59E0B;">{SVG_ICONS["dollar-sign"]}</span><span>Funding Stage Distribution</span></div>'), unsafe_allow_html=True)
+            fund_counts = df["Funding Stage"].value_counts().reset_index()
+            fund_counts.columns = ["Funding Stage", "Count"]
+            fig_fund = px.bar(
+                fund_counts,
+                x="Funding Stage",
                 y="Count",
-                color="Buying Signal",
-                color_discrete_map=signal_colors,
-                labels={"Count": "Account Count"}
+                color="Funding Stage",
+                color_discrete_sequence=chart_color_sequence
             )
-            fig_signal.update_layout(
+            fig_fund.update_layout(
                 **PLOTLY_LAYOUT_DEFAULTS,
-                height=280,
-                xaxis_title="Intent Level",
-                yaxis_title="Count"
+                height=260,
+                xaxis_title="Funding Stage",
+                yaxis_title="Accounts"
             )
-            st.plotly_chart(fig_signal, use_container_width=True)
+            st.plotly_chart(fig_fund, use_container_width=True)
+            
+        with col2:
+            st.markdown(clean_html(f'<div class="saas-card-title"><span style="color:#22C55E;">{SVG_ICONS["trending-up"]}</span><span>Recent Funding Velocity</span></div>'), unsafe_allow_html=True)
+            rf_counts = df["Recent Funding"].value_counts().reset_index()
+            rf_counts.columns = ["Recent Funding", "Count"]
+            fig_rf = px.pie(
+                rf_counts,
+                values="Count",
+                names="Recent Funding",
+                color="Recent Funding",
+                color_discrete_map={"Yes": "#10B981", "No": "#64748B"},
+                hole=0.45
+            )
+            fig_rf.update_layout(
+                **PLOTLY_LAYOUT_DEFAULTS,
+                height=260
+            )
+            st.plotly_chart(fig_rf, use_container_width=True)
+
+    # ------------------ 3. LOCATION ANALYSIS ------------------
+    with st.expander("🌐 Location Analysis", expanded=False):
+        st.markdown(clean_html(f'<div class="saas-card-title"><span style="color:#3B82F6;">{SVG_ICONS["globe"]}</span><span>Geographic Accounts Distribution</span></div>'), unsafe_allow_html=True)
+        loc_counts = df["Location"].value_counts().reset_index()
+        loc_counts.columns = ["Location", "Count"]
         
-    st.markdown("---")
-    
-    # Chart 5: Leaderboard - Top 10 Accounts (Horizontal Bar Chart)
-    st.markdown('<h3 style="color:#FFFFFF; margin-bottom:12px;">Top 10 Accounts Leaderboard</h3>', unsafe_allow_html=True)
-    with st.container(border=True):
-        leaderboard_df = df.sort_values(by="gtm_opportunity_score", ascending=True).tail(10)
-        
-        fig_lead = go.Figure()
-        fig_lead.add_trace(go.Bar(
-            y=leaderboard_df["Company Name"],
-            x=leaderboard_df["icp_score"],
-            name="ICP Fit Score",
-            orientation="h",
-            marker=dict(color="#3B82F6")
-        ))
-        fig_lead.add_trace(go.Bar(
-            y=leaderboard_df["Company Name"],
-            x=leaderboard_df["gtm_opportunity_score"],
-            name="GTM Opportunity Score",
-            orientation="h",
-            marker=dict(color="#10B981")
-        ))
-        
-        fig_lead.update_layout(
-            **PLOTLY_LAYOUT_DEFAULTS,
-            barmode="group",
-            height=420,
-            xaxis_title="Score Index",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        fig_loc = px.bar(
+            loc_counts,
+            x="Location",
+            y="Count",
+            color="Location",
+            color_discrete_sequence=chart_color_sequence
         )
-        st.plotly_chart(fig_lead, use_container_width=True)
+        fig_loc.update_layout(
+            **PLOTLY_LAYOUT_DEFAULTS,
+            height=300,
+            xaxis_title="HQ Location / Region",
+            yaxis_title="Account Count"
+        )
+        st.plotly_chart(fig_loc, use_container_width=True)
+
+    # ------------------ 4. GROWTH ANALYSIS ------------------
+    with st.expander("📈 Growth Analysis", expanded=False):
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            st.markdown(clean_html(f'<div class="saas-card-title"><span style="color:#EF4444;">{SVG_ICONS["activity"]}</span><span>Hiring Activity Intensity</span></div>'), unsafe_allow_html=True)
+            hir_counts = df["Hiring Activity"].value_counts().reset_index()
+            hir_counts.columns = ["Hiring Speed", "Count"]
+            fig_hir = px.bar(
+                hir_counts, x="Hiring Speed", y="Count", color="Hiring Speed",
+                color_discrete_map={"High": "#22C55E", "Medium": "#3B82F6", "Low": "#F59E0B", "None": "#64748B"}
+            )
+            fig_hir.update_layout(
+                **PLOTLY_LAYOUT_DEFAULTS, height=240, showlegend=False,
+                xaxis_title="Hiring Activity", yaxis_title="Accounts"
+            )
+            st.plotly_chart(fig_hir, use_container_width=True)
+            
+        with col2:
+            st.markdown(clean_html(f'<div class="saas-card-title"><span style="color:#10B981;">{SVG_ICONS["check-circle"]}</span><span>Expansion Footprint Velocity</span></div>'), unsafe_allow_html=True)
+            exp_counts = df["Expansion Status"].value_counts().reset_index()
+            exp_counts.columns = ["Expansion Status", "Count"]
+            fig_exp = px.bar(
+                exp_counts, x="Expansion Status", y="Count", color="Expansion Status",
+                color_discrete_map={"Expanding": "#10B981", "Stable": "#3B82F6", "Contracting": "#EF4444"}
+            )
+            fig_exp.update_layout(
+                **PLOTLY_LAYOUT_DEFAULTS, height=240, showlegend=False,
+                xaxis_title="Expansion Status", yaxis_title="Accounts"
+            )
+            st.plotly_chart(fig_exp, use_container_width=True)
+
+    # ------------------ 5. SCORE ANALYSIS & CORRELATIONS ------------------
+    with st.expander("📊 Score Analysis & Correlations", expanded=False):
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            st.markdown(clean_html(f'<div class="saas-card-title"><span style="color:#3B82F6;">{SVG_ICONS["bar-chart"]}</span><span>ICP Score Distribution</span></div>'), unsafe_allow_html=True)
+            fig_icp = px.histogram(
+                df, x="icp_score", nbins=12, color_discrete_sequence=["#3B82F6"]
+            )
+            fig_icp.update_layout(
+                **PLOTLY_LAYOUT_DEFAULTS, height=240,
+                xaxis_title="ICP Score", yaxis_title="Count", bargap=0.08
+            )
+            st.plotly_chart(fig_icp, use_container_width=True)
+            
+        with col2:
+            st.markdown(clean_html(f'<div class="saas-card-title"><span style="color:#10B981;">{SVG_ICONS["target"]}</span><span>GTM Opportunity Score Distribution</span></div>'), unsafe_allow_html=True)
+            fig_opp = px.histogram(
+                df, x="gtm_opportunity_score", nbins=12, color_discrete_sequence=["#10B981"]
+            )
+            fig_opp.update_layout(
+                **PLOTLY_LAYOUT_DEFAULTS, height=240,
+                xaxis_title="Opportunity Score", yaxis_title="Count", bargap=0.08
+            )
+            st.plotly_chart(fig_opp, use_container_width=True)
+            
+        st.markdown("#### Opportunity Score Correlations")
+        col_c1, col_c2, col_c3 = st.columns(3)
+        with col_c1:
+            st.markdown(clean_html(f'<div class="saas-card-title">Industry vs Opportunity Score</div>'), unsafe_allow_html=True)
+            fig_box_ind = px.box(df, x="Industry", y="gtm_opportunity_score", color_discrete_sequence=["#3B82F6"])
+            fig_box_ind.update_layout(**PLOTLY_LAYOUT_DEFAULTS, height=250, xaxis_title=None, yaxis_title="Score")
+            st.plotly_chart(fig_box_ind, use_container_width=True)
+        with col_c2:
+            st.markdown(clean_html(f'<div class="saas-card-title">Funding Stage vs Opportunity Score</div>'), unsafe_allow_html=True)
+            fig_box_fund = px.box(df, x="Funding Stage", y="gtm_opportunity_score", color_discrete_sequence=["#F59E0B"])
+            fig_box_fund.update_layout(**PLOTLY_LAYOUT_DEFAULTS, height=250, xaxis_title=None, yaxis_title="Score")
+            st.plotly_chart(fig_box_fund, use_container_width=True)
+        with col_c3:
+            st.markdown(clean_html(f'<div class="saas-card-title">Location vs Opportunity Score</div>'), unsafe_allow_html=True)
+            fig_box_loc = px.box(df, x="Location", y="gtm_opportunity_score", color_discrete_sequence=["#14B8A6"])
+            fig_box_loc.update_layout(**PLOTLY_LAYOUT_DEFAULTS, height=250, xaxis_title=None, yaxis_title="Score")
+            st.plotly_chart(fig_box_loc, use_container_width=True)
