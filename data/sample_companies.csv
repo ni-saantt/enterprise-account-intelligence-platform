@@ -1,0 +1,101 @@
+Company Name,Industry,Funding Stage,Employee Count,Location,Hiring Activity,Recent Funding,Expansion Status
+Yellow.ai,AI,Bootstrapped,19,APAC,Low,No,Expanding
+Fractal Analytics,AI,Series A,87,UK,High,Yes,Expanding
+Quantiphi,AI,Growth,582,UK,High,Yes,Expanding
+Hevo Data,AI,Series A,89,Middle East,High,Yes,Expanding
+Pixis AI,AI,Series A,144,Canada,High,No,Expanding
+Netradyne,AI,Bootstrapped,59,Canada,None,No,Contracting
+Haptik,AI,Series A,225,UK,High,No,Expanding
+SigTuple,AI,Series C,249,APAC,Medium,No,Expanding
+Arya.ai,AI,IPO-bound,588,Middle East,Low,No,Expanding
+Vernacular.ai,AI,Seed,22,UK,Low,No,Stable
+Myelin Foundry,AI,Seed,26,EU,Low,Yes,Stable
+Active.ai,AI,IPO-bound,706,India,Medium,No,Stable
+Niki.ai,AI,Series A,124,APAC,High,No,Expanding
+Crux Intelligence,AI,Bootstrapped,14,Canada,Medium,No,Expanding
+Grep.ai,AI,Growth,400,Middle East,Medium,Yes,Expanding
+Scribble Data,AI,Series B,193,EU,Medium,Yes,Expanding
+Observe.ai,AI,IPO-bound,565,UK,Medium,No,Stable
+Freshworks,SaaS,Series A,175,Latin America,High,No,Expanding
+Zoho,SaaS,Series C,619,Canada,Medium,Yes,Expanding
+Chargebee,SaaS,Series A,220,India,Medium,No,Stable
+BrowserStack,SaaS,Series A,65,US,High,No,Expanding
+Postman,SaaS,IPO-bound,724,Middle East,Low,Yes,Expanding
+Wingify,SaaS,Growth,215,Latin America,Medium,No,Expanding
+LeadSquared,SaaS,Growth,407,APAC,High,Yes,Expanding
+WebEngage,SaaS,IPO-bound,1812,Middle East,High,No,Stable
+Clevertap,SaaS,Series A,146,UK,Medium,Yes,Expanding
+InVideo,SaaS,IPO-bound,1780,Canada,Low,No,Expanding
+Exotel,SaaS,Series B,225,India,High,Yes,Expanding
+Amagi,SaaS,Series C,169,APAC,Medium,Yes,Expanding
+Icertis,SaaS,Series A,44,UK,High,Yes,Expanding
+Druva,SaaS,Bootstrapped,67,Canada,Low,No,Expanding
+Zenoti,SaaS,Series A,198,APAC,High,No,Expanding
+Keka SaaS,SaaS,Growth,583,APAC,High,Yes,Expanding
+Facilio,SaaS,Series C,532,UK,Medium,No,Expanding
+Darwinbox SaaS,SaaS,Series A,87,EU,Medium,Yes,Expanding
+Whatfix,SaaS,Growth,375,US,High,Yes,Expanding
+HighRadius,SaaS,Series A,47,EU,Medium,Yes,Expanding
+Razorpay,FinTech,Series B,201,Canada,High,No,Expanding
+IDfy,FinTech,Bootstrapped,65,Middle East,Low,No,Contracting
+Signzy,FinTech,Series A,54,Middle East,Medium,Yes,Stable
+Jupiter Fin,FinTech,Series C,628,US,High,Yes,Expanding
+Fi Money,FinTech,Series C,497,EU,High,Yes,Expanding
+Slice,FinTech,Series A,167,Middle East,High,No,Expanding
+Cred,FinTech,Series A,101,UK,High,No,Expanding
+Groww,FinTech,Series C,713,US,High,Yes,Expanding
+INDmoney,FinTech,Seed,29,Latin America,Medium,Yes,Expanding
+Zerodha,FinTech,Series C,368,Canada,High,No,Expanding
+Upstox,FinTech,Series C,152,Latin America,Medium,No,Expanding
+CoinSwitch,FinTech,Series B,138,EU,High,No,Expanding
+Pine Labs,FinTech,Series B,85,India,High,Yes,Expanding
+BharatPe,FinTech,Seed,6,UK,Medium,No,Stable
+PhonePe,FinTech,IPO-bound,880,EU,Low,Yes,Expanding
+Paytm,FinTech,Series C,272,UK,High,Yes,Expanding
+M2P Fintech,FinTech,Series C,747,EU,Medium,No,Expanding
+OneCard,FinTech,Bootstrapped,45,Middle East,Low,No,Contracting
+Darwinbox,HR Tech,Series A,201,UK,Medium,No,Stable
+Keka,HR Tech,Seed,19,APAC,Medium,Yes,Stable
+AuthBridge,HR Tech,Series A,119,India,High,Yes,Expanding
+SpringVerify,HR Tech,Series B,70,APAC,Medium,No,Expanding
+GreytHR,HR Tech,Bootstrapped,18,UK,Low,No,Contracting
+Disprz,HR Tech,Seed,28,EU,Low,Yes,Expanding
+Mercer Mettl,HR Tech,Bootstrapped,48,APAC,Low,No,Expanding
+ZingHR,HR Tech,Growth,650,UK,High,No,Expanding
+Leena AI,HR Tech,Bootstrapped,59,US,None,No,Stable
+Dockabl,HR Tech,Series B,227,Latin America,Medium,Yes,Expanding
+Belong.co,HR Tech,Growth,587,UK,High,Yes,Expanding
+HackerEarth,HR Tech,Bootstrapped,24,India,Medium,No,Stable
+Sense HR,HR Tech,Growth,715,Canada,Medium,Yes,Expanding
+TurboHire,HR Tech,Seed,14,EU,Medium,No,Expanding
+Talent500,HR Tech,Bootstrapped,36,India,Medium,No,Stable
+Skillate,HR Tech,IPO-bound,1646,EU,Low,No,Expanding
+Practo,Healthcare,IPO-bound,832,Canada,Medium,Yes,Expanding
+Pharmeasy,Healthcare,Bootstrapped,47,EU,None,No,Expanding
+Tata 1mg,Healthcare,Series B,70,Latin America,Medium,Yes,Expanding
+MediBuddy,Healthcare,Series A,81,EU,Medium,No,Stable
+Cure.fit,Healthcare,Series A,36,APAC,Medium,Yes,Stable
+HealthifyMe,Healthcare,IPO-bound,642,India,Medium,No,Stable
+Pristyn Care,Healthcare,Seed,8,US,Medium,No,Expanding
+Innovaccer,Healthcare,Seed,24,Middle East,Low,No,Expanding
+Portea Medical,Healthcare,Growth,673,EU,Medium,Yes,Expanding
+Netmeds,Healthcare,Series B,41,EU,High,No,Expanding
+MedGenome,Healthcare,Series B,140,UK,Medium,Yes,Stable
+mfine,Healthcare,Bootstrapped,43,Middle East,Medium,No,Contracting
+Niramai,Healthcare,Series B,133,EU,High,No,Expanding
+Medikabazaar,Healthcare,Series C,538,Middle East,Medium,Yes,Expanding
+BeatO,Healthcare,Growth,150,EU,Medium,No,Expanding
+Unacademy,EdTech,Series C,743,Latin America,Medium,No,Expanding
+UpGrad,EdTech,Series C,368,UK,High,No,Expanding
+Simplilearn,EdTech,Series B,161,EU,High,No,Expanding
+Classplus,EdTech,Bootstrapped,44,Canada,Low,No,Stable
+Teachmint,EdTech,Seed,6,Latin America,Low,Yes,Stable
+PhysicsWallah,EdTech,Series C,739,Latin America,Medium,Yes,Expanding
+Eruditus,EdTech,Series C,399,UK,High,Yes,Expanding
+Lead School,EdTech,IPO-bound,1370,US,High,Yes,Stable
+Vedantu,EdTech,Growth,405,Canada,Medium,Yes,Expanding
+Doubtnut,EdTech,IPO-bound,1451,Latin America,Medium,No,Stable
+CueMath,EdTech,Series A,220,EU,Medium,No,Stable
+Lido Learning,EdTech,IPO-bound,1805,EU,Low,No,Stable
+Adda247,EdTech,Series B,142,APAC,Medium,Yes,Expanding
+Toppr,EdTech,Series B,111,Canada,High,Yes,Expanding
